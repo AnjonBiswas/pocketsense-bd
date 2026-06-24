@@ -1,22 +1,34 @@
-import { formatDistanceToNow } from "date-fns";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { getCategoryMeta } from "@/lib/utils/categories";
+"use client";
 
-export type RecentExpenseItem = {
-  id: string;
-  amount: number;
-  category: string;
-  note: string | null;
-  date: string;
-  created_at: string;
-};
+import { useEffect, useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCategoryMeta } from "@/lib/utils/categories";
+import { useExpenseStore, type Expense } from "@/store/expenseStore";
+
+export type RecentExpenseItem = Expense;
 
 type RecentExpensesListProps = {
-  expenses: RecentExpenseItem[];
+  initialExpenses: RecentExpenseItem[];
 };
 
-export function RecentExpensesList({ expenses }: RecentExpensesListProps) {
+export function RecentExpensesList({ initialExpenses }: RecentExpensesListProps) {
+  const expenses = useExpenseStore((state) => state.expenses);
+  const setExpenses = useExpenseStore((state) => state.setExpenses);
+
+  useEffect(() => {
+    setExpenses(initialExpenses);
+  }, [initialExpenses, setExpenses]);
+
+  const visibleExpenses = useMemo(
+    () =>
+      [...expenses]
+        .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+        .slice(0, 5),
+    [expenses]
+  );
+
   return (
     <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur">
       <CardHeader className="flex flex-row items-center justify-between gap-3">
@@ -29,7 +41,13 @@ export function RecentExpensesList({ expenses }: RecentExpensesListProps) {
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        {expenses.map((expense) => {
+        {visibleExpenses.length === 0 ? (
+          <div className="rounded-2xl bg-secondary/45 px-4 py-6 text-sm text-muted-foreground">
+            এখনো কোনো খরচ যোগ করা হয়নি।
+          </div>
+        ) : null}
+
+        {visibleExpenses.map((expense) => {
           const meta = getCategoryMeta(expense.category);
 
           return (
@@ -48,6 +66,7 @@ export function RecentExpensesList({ expenses }: RecentExpensesListProps) {
                   <p className="font-medium">{expense.note || meta.bn}</p>
                   <p className="text-xs text-muted-foreground">
                     {meta.bn} · {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
+                    {expense.optimistic ? " · syncing..." : ""}
                   </p>
                 </div>
               </div>

@@ -41,7 +41,7 @@ async function TopCategoriesSection() {
 
 async function RecentExpensesSection() {
   const expenses = await getRecentExpenses(5);
-  return <RecentExpensesList expenses={expenses} />;
+  return <RecentExpensesList initialExpenses={expenses} />;
 }
 
 async function AlertsSection() {

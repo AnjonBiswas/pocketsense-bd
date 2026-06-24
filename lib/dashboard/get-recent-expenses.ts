@@ -1,8 +1,8 @@
 import { cache } from "react";
 import { headers } from "next/headers";
-import type { RecentExpenseItem } from "@/components/dashboard/RecentExpensesList";
+import type { Expense } from "@/store/expenseStore";
 
-export type RecentExpenseResponse = RecentExpenseItem & {
+export type RecentExpenseResponse = Expense & {
   categoryDetails: {
     en: string;
     bn: string;
