@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,24 +9,18 @@ import { useExpenseStore, type Expense } from "@/store/expenseStore";
 
 export type RecentExpenseItem = Expense;
 
-type RecentExpensesListProps = {
-  initialExpenses: RecentExpenseItem[];
-};
-
-export function RecentExpensesList({ initialExpenses }: RecentExpensesListProps) {
+export function RecentExpensesList() {
   const expenses = useExpenseStore((state) => state.expenses);
-  const setExpenses = useExpenseStore((state) => state.setExpenses);
-
-  useEffect(() => {
-    setExpenses(initialExpenses);
-  }, [initialExpenses, setExpenses]);
+  const activeCategory = useExpenseStore((state) => state.filters.category);
+  const setCategoryFilter = useExpenseStore((state) => state.setCategoryFilter);
 
   const visibleExpenses = useMemo(
     () =>
       [...expenses]
+        .filter((expense) => (activeCategory ? expense.category === activeCategory : true))
         .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
         .slice(0, 5),
-    [expenses]
+    [activeCategory, expenses]
   );
 
   return (
@@ -34,10 +28,20 @@ export function RecentExpensesList({ initialExpenses }: RecentExpensesListProps)
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <div>
           <CardTitle className="text-lg">Recent expenses</CardTitle>
-          <CardDescription>সর্বশেষ ৫টি লেনদেন</CardDescription>
+          <CardDescription>
+            {activeCategory
+              ? `${getCategoryMeta(activeCategory).bn} ক্যাটাগরির সর্বশেষ ৫টি লেনদেন`
+              : "সর্বশেষ ৫টি লেনদেন"}
+          </CardDescription>
         </div>
-        <Button type="button" variant="outline" size="sm" className="rounded-full">
-          See All
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => setCategoryFilter(undefined)}
+        >
+          {activeCategory ? "Clear Filter" : "See All"}
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">

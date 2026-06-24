@@ -1,24 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { getCategoryMeta } from "@/lib/utils/categories";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useExpenseStore } from "@/store/expenseStore";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-type CategoryDatum = {
-  category: string;
-  amount: number;
-  percentage: number;
-};
+export function TopCategoriesCard() {
+  const expenses = useExpenseStore((state) => state.expenses);
+  const activeCategory = useExpenseStore((state) => state.filters.category || null);
+  const setCategoryFilter = useExpenseStore((state) => state.setCategoryFilter);
 
-type TopCategoriesCardProps = {
-  categories: CategoryDatum[];
-};
+  const topFive = useMemo(() => {
+    const totalSpent = expenses.reduce((sum, item) => sum + Number(item.amount), 0);
 
-export function TopCategoriesCard({ categories }: TopCategoriesCardProps) {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const topFive = useMemo(() => categories.slice(0, 5), [categories]);
+    return Object.entries(
+      expenses.reduce<Record<string, number>>((accumulator, item) => {
+        accumulator[item.category] = (accumulator[item.category] || 0) + Number(item.amount);
+        return accumulator;
+      }, {})
+    )
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalSpent > 0 ? (amount / totalSpent) * 100 : 0
+      }))
+      .sort((left, right) => right.amount - left.amount)
+      .slice(0, 5);
+  }, [expenses]);
 
   return (
     <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur">
@@ -28,29 +38,35 @@ export function TopCategoriesCard({ categories }: TopCategoriesCardProps) {
       </CardHeader>
       <CardContent className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="h-[240px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={topFive}
-                dataKey="amount"
-                nameKey="category"
-                innerRadius={55}
-                outerRadius={95}
-                paddingAngle={3}
-              >
-                {topFive.map((entry) => (
-                  <Cell key={entry.category} fill={getCategoryMeta(entry.category).color} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value: number, _name, payload) => {
-                  const category = payload?.payload?.category || "other";
-                  const meta = getCategoryMeta(category);
-                  return [`৳${Number(value).toFixed(0)}`, meta.bn];
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          {topFive.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={topFive}
+                  dataKey="amount"
+                  nameKey="category"
+                  innerRadius={55}
+                  outerRadius={95}
+                  paddingAngle={3}
+                >
+                  {topFive.map((entry) => (
+                    <Cell key={entry.category} fill={getCategoryMeta(entry.category).color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number, _name, payload) => {
+                    const category = payload?.payload?.category || "other";
+                    const meta = getCategoryMeta(category);
+                    return [`৳${Number(value).toFixed(0)}`, meta.bn];
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-3xl bg-secondary/40 text-sm text-muted-foreground">
+              No spending data yet
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -67,7 +83,7 @@ export function TopCategoriesCard({ categories }: TopCategoriesCardProps) {
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-white/60 bg-secondary/40 hover:bg-secondary/70"
                 }`}
-                onClick={() => setActiveCategory(isActive ? null : item.category)}
+                onClick={() => setCategoryFilter(isActive ? undefined : item.category)}
               >
                 <div className="flex items-center gap-3">
                   <div
@@ -89,7 +105,12 @@ export function TopCategoriesCard({ categories }: TopCategoriesCardProps) {
             );
           })}
 
-          <Button type="button" variant="outline" className="w-full rounded-2xl">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-2xl"
+            onClick={() => setCategoryFilter(undefined)}
+          >
             {activeCategory ? `Filtered: ${getCategoryMeta(activeCategory).bn}` : "Tap a category to filter"}
           </Button>
         </div>
