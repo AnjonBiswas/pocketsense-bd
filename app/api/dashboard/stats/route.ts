@@ -1,8 +1,9 @@
-import { endOfMonth, startOfMonth } from "date-fns";
+import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { getCategoryMeta } from "@/lib/utils/categories";
+import { buildTuitionTracker } from "@/lib/utils/income";
 
 const fallbackStats = {
   totalIncome: 18000,
@@ -19,10 +20,19 @@ const fallbackStats = {
   spentToday: 350
 };
 
+function buildFallbackAlerts() {
+  return [
+    { type: "warning" as const, message: "You're spending 20% above average" },
+    { type: "info" as const, message: "Tuition payment due tomorrow" },
+    { type: "success" as const, message: "Friend owes you ৳120" }
+  ];
+}
+
 export async function GET() {
   const today = new Date();
   const monthStart = startOfMonth(today).toISOString().slice(0, 10);
   const monthEnd = endOfMonth(today).toISOString().slice(0, 10);
+  const reminderStart = startOfMonth(subMonths(today, 1)).toISOString().slice(0, 10);
   const daysInMonth = endOfMonth(today).getDate();
   const daysElapsed = today.getDate();
   const daysRemaining = Math.max(daysInMonth - daysElapsed, 1);
@@ -45,7 +55,9 @@ export async function GET() {
       return NextResponse.json({
         ...fallbackStats,
         dailyBudget,
-        remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0)
+        remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
+        topCategories: [],
+        alerts: buildFallbackAlerts()
       });
     }
 
@@ -53,9 +65,9 @@ export async function GET() {
       await Promise.all([
         supabase
           .from("incomes")
-          .select("amount, source, date")
+          .select("id, amount, source, date, note, is_recurring, created_at")
           .eq("user_id", user.id)
-          .gte("date", monthStart)
+          .gte("date", reminderStart)
           .lte("date", monthEnd),
         supabase
           .from("expenses")
@@ -76,7 +88,13 @@ export async function GET() {
           .eq("status", "completed")
       ]);
 
-    const totalIncome = (incomes || []).reduce((sum, item) => sum + Number(item.amount), 0);
+    const normalizedIncomes = (incomes || []).map((income) => ({
+      ...income,
+      amount: Number(income.amount)
+    }));
+    const totalIncome = normalizedIncomes
+      .filter((income) => income.date >= monthStart && income.date <= monthEnd)
+      .reduce((sum, item) => sum + Number(item.amount), 0);
     const totalExpenses = (expenses || []).reduce((sum, item) => sum + Number(item.amount), 0);
     const todayKey = today.toISOString().slice(0, 10);
     const spentToday = (expenses || [])
@@ -108,6 +126,10 @@ export async function GET() {
       }))
       .sort((left, right) => right.amount - left.amount);
 
+    const tuitionAlert = buildTuitionTracker(normalizedIncomes).find((student) =>
+      student.reminderText.includes("due")
+    );
+
     return NextResponse.json({
       totalIncome: totalIncome || fallbackStats.totalIncome,
       totalExpenses,
@@ -126,7 +148,7 @@ export async function GET() {
       topCategories: categoryTotals,
       alerts: [
         { type: "warning", message: "You're spending 20% above average" },
-        { type: "info", message: "Tuition payment due tomorrow" },
+        { type: "info", message: tuitionAlert?.reminderText || "Tuition payment due tomorrow" },
         { type: "success", message: "Friend owes you ৳120" }
       ]
     });
@@ -150,11 +172,7 @@ export async function GET() {
         { category: "mobile", amount: 720, percentage: 11, color: "#4BC0C0" },
         { category: "entertainment", amount: 620, percentage: 9, color: "#FF6B6B" }
       ],
-      alerts: [
-        { type: "warning", message: "You're spending 20% above average" },
-        { type: "info", message: "Tuition payment due tomorrow" },
-        { type: "success", message: "Friend owes you ৳120" }
-      ]
+      alerts: buildFallbackAlerts()
     });
   }
 }

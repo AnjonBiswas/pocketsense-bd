@@ -1,25 +1,83 @@
-import { CircleDollarSign } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IncomeDashboardClient } from "@/components/income/IncomeDashboardClient";
+import { createServerComponentClient } from "@/lib/supabase/server";
+import { buildTuitionTracker, type IncomeRecord } from "@/lib/utils/income";
 
-export default function IncomePage() {
-  return (
-    <Card className="border-white/60 bg-white/85 shadow-sm backdrop-blur">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-900">
-            <CircleDollarSign className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle>আয়ের খাতা</CardTitle>
-            <CardDescription>Track allowance, freelance work, and other income sources.</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          This route is ready for income forms, recurring income cards, and monthly totals.
-        </p>
-      </CardContent>
-    </Card>
-  );
+function buildFallbackIncomes(): IncomeRecord[] {
+  const today = new Date();
+  const month = today.toISOString().slice(0, 7);
+
+  return [
+    {
+      id: "preview-income-1",
+      amount: 7000,
+      source: "allowance",
+      date: `${month}-01`,
+      note: "Family monthly support",
+      is_recurring: true,
+      created_at: today.toISOString()
+    },
+    {
+      id: "preview-income-2",
+      amount: 3500,
+      source: "tuition",
+      date: `${month}-09`,
+      note: "Student: Rafi",
+      is_recurring: true,
+      created_at: today.toISOString()
+    },
+    {
+      id: "preview-income-3",
+      amount: 4200,
+      source: "freelance",
+      date: `${month}-14`,
+      note: "UI design revision",
+      is_recurring: false,
+      created_at: today.toISOString()
+    },
+    {
+      id: "preview-income-4",
+      amount: 1000,
+      source: "gift",
+      date: `${month}-20`,
+      note: "Birthday gift",
+      is_recurring: false,
+      created_at: today.toISOString()
+    }
+  ];
+}
+
+async function getIncomes(): Promise<IncomeRecord[]> {
+  try {
+    const supabase = createServerComponentClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return buildFallbackIncomes();
+    }
+
+    const { data, error } = await supabase
+      .from("incomes")
+      .select("id, amount, source, date, note, is_recurring, created_at")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false });
+
+    if (error) {
+      return buildFallbackIncomes();
+    }
+
+    return (data || []).map((income) => ({
+      ...income,
+      amount: Number(income.amount)
+    }));
+  } catch {
+    return buildFallbackIncomes();
+  }
+}
+
+export default async function IncomePage() {
+  const incomes = await getIncomes();
+
+  return <IncomeDashboardClient initialIncomes={incomes} initialStudents={buildTuitionTracker(incomes)} />;
 }
