@@ -1,6 +1,9 @@
 import { BottomNav } from "@/components/dashboard/BottomNav";
+import { ExpenseToast } from "@/components/dashboard/ExpenseToast";
 import { Navbar } from "@/components/dashboard/Navbar";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { AddExpenseModal } from "@/components/modals/AddExpenseModal";
+import { FAB } from "@/components/ui/FAB";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { createServerComponentClient } from "@/lib/supabase/server";
 
@@ -53,6 +56,9 @@ export default async function DashboardLayout({
           </div>
         </div>
         <BottomNav />
+        <FAB />
+        <ExpenseToast />
+        <AddExpenseModal />
       </div>
     </LanguageProvider>
   );
