@@ -2,6 +2,7 @@ import { endOfMonth, startOfMonth } from "date-fns";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { calculateDailyBudget } from "@/lib/utils/budget";
+import { getCategoryMeta } from "@/lib/utils/categories";
 
 const fallbackStats = {
   totalIncome: 18000,
@@ -58,7 +59,7 @@ export async function GET() {
           .lte("date", monthEnd),
         supabase
           .from("expenses")
-          .select("amount, date, created_at")
+          .select("amount, category, date, created_at")
           .eq("user_id", user.id)
           .gte("date", monthStart)
           .lte("date", monthEnd)
@@ -93,6 +94,19 @@ export async function GET() {
       savingsGoal,
       daysRemaining
     );
+    const categoryTotals = Object.entries(
+      (expenses || []).reduce<Record<string, number>>((accumulator, item) => {
+        accumulator[item.category] = (accumulator[item.category] || 0) + Number(item.amount);
+        return accumulator;
+      }, {})
+    )
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0,
+        color: getCategoryMeta(category).color
+      }))
+      .sort((left, right) => right.amount - left.amount);
 
     return NextResponse.json({
       totalIncome: totalIncome || fallbackStats.totalIncome,
@@ -108,7 +122,13 @@ export async function GET() {
       daysRemaining,
       spentToday,
       dailyBudget,
-      remainingBudget: Math.max(monthlyLimit - totalExpenses, 0)
+      remainingBudget: Math.max(monthlyLimit - totalExpenses, 0),
+      topCategories: categoryTotals,
+      alerts: [
+        { type: "warning", message: "You're spending 20% above average" },
+        { type: "info", message: "Tuition payment due tomorrow" },
+        { type: "success", message: "Friend owes you ৳120" }
+      ]
     });
   } catch {
     const dailyBudget = calculateDailyBudget(
@@ -122,7 +142,19 @@ export async function GET() {
     return NextResponse.json({
       ...fallbackStats,
       dailyBudget,
-      remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0)
+      remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
+      topCategories: [
+        { category: "food", amount: 2400, percentage: 36, color: "#FF6384" },
+        { category: "transport", amount: 1300, percentage: 19, color: "#36A2EB" },
+        { category: "cafe", amount: 980, percentage: 15, color: "#FFCE56" },
+        { category: "mobile", amount: 720, percentage: 11, color: "#4BC0C0" },
+        { category: "entertainment", amount: 620, percentage: 9, color: "#FF6B6B" }
+      ],
+      alerts: [
+        { type: "warning", message: "You're spending 20% above average" },
+        { type: "info", message: "Tuition payment due tomorrow" },
+        { type: "success", message: "Friend owes you ৳120" }
+      ]
     });
   }
 }

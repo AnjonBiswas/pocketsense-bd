@@ -16,6 +16,16 @@ export type DashboardStats = {
   spentToday: number;
   dailyBudget: number;
   remainingBudget: number;
+  topCategories: Array<{
+    category: string;
+    amount: number;
+    percentage: number;
+    color: string;
+  }>;
+  alerts: Array<{
+    type: "warning" | "info" | "success";
+    message: string;
+  }>;
 };
 
 export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
