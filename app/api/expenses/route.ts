@@ -2,6 +2,13 @@ import { endOfMonth, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { calculateDailyBudget } from "@/lib/utils/budget";
+import {
+  FALLBACK_EXPENSES,
+  applyExpenseFilters,
+  normalizeExpense,
+  paginateExpenses,
+  type ExpenseQueryFilters
+} from "@/lib/utils/expenses";
 import { CATEGORIES } from "@/lib/utils/categories";
 
 function buildFallbackStats(totalExpenses: number) {
@@ -58,28 +65,70 @@ async function calculateUpdatedStats(userId: string, supabase: ReturnType<typeof
   };
 }
 
-export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null);
+function parseFilters(request: NextRequest): ExpenseQueryFilters {
+  const categories = request.nextUrl.searchParams
+    .get("categories")
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const fallbackCategory = request.nextUrl.searchParams.get("category");
+  const search = request.nextUrl.searchParams.get("search") || undefined;
+  const minAmountValue = request.nextUrl.searchParams.get("minAmount");
+  const maxAmountValue = request.nextUrl.searchParams.get("maxAmount");
+  const pageValue = request.nextUrl.searchParams.get("page");
+  const limitValue = request.nextUrl.searchParams.get("limit");
 
-  if (!body) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+  return {
+    startDate: request.nextUrl.searchParams.get("startDate") || undefined,
+    endDate: request.nextUrl.searchParams.get("endDate") || undefined,
+    categories: categories?.length ? categories : fallbackCategory ? [fallbackCategory] : undefined,
+    search,
+    minAmount: minAmountValue ? Number(minAmountValue) : undefined,
+    maxAmount: maxAmountValue ? Number(maxAmountValue) : undefined,
+    page: pageValue ? Math.max(Number(pageValue), 1) : 1,
+    limit: limitValue ? Math.max(Number(limitValue), 1) : 10
+  };
+}
 
+function validateExpensePayload(body: Record<string, unknown>) {
   const amount = Number(body.amount);
   const category = body.category as keyof typeof CATEGORIES;
   const note = typeof body.note === "string" ? body.note.trim() : null;
   const date = typeof body.date === "string" ? body.date : "";
 
   if (!amount || amount <= 0) {
-    return NextResponse.json({ error: "Amount must be greater than zero." }, { status: 400 });
+    return { error: "Amount must be greater than zero." };
   }
 
   if (!category || !(category in CATEGORIES)) {
-    return NextResponse.json({ error: "Invalid category." }, { status: 400 });
+    return { error: "Invalid category." };
   }
 
   if (!date) {
-    return NextResponse.json({ error: "Date is required." }, { status: 400 });
+    return { error: "Date is required." };
+  }
+
+  return {
+    value: {
+      amount,
+      category,
+      note,
+      date
+    }
+  };
+}
+
+export async function POST(request: NextRequest) {
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (!body) {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const validation = validateExpensePayload(body);
+
+  if ("error" in validation) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
   try {
@@ -91,26 +140,20 @@ export async function POST(request: NextRequest) {
     if (!user) {
       const expense = {
         id: `guest-${Date.now()}`,
-        amount,
-        category,
-        note,
-        date,
+        ...validation.value,
         created_at: new Date().toISOString()
       };
 
       return NextResponse.json({
         expense,
-        stats: buildFallbackStats(6750 + amount)
+        stats: buildFallbackStats(6750 + expense.amount)
       });
     }
 
     const { data: expense, error } = await supabase
       .from("expenses")
       .insert({
-        amount,
-        category,
-        note,
-        date,
+        ...validation.value,
         user_id: user.id
       })
       .select("id, amount, category, note, date, created_at")
@@ -123,10 +166,7 @@ export async function POST(request: NextRequest) {
     const stats = await calculateUpdatedStats(user.id, supabase);
 
     return NextResponse.json({
-      expense: {
-        ...expense,
-        amount: Number(expense.amount)
-      },
+      expense: normalizeExpense(expense),
       stats
     });
   } catch (error) {
@@ -138,9 +178,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const startDate = request.nextUrl.searchParams.get("startDate");
-  const endDate = request.nextUrl.searchParams.get("endDate");
-  const category = request.nextUrl.searchParams.get("category");
+  const filters = parseFilters(request);
 
   try {
     const supabase = createRouteHandlerClient();
@@ -149,30 +187,71 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ expenses: [] });
+      const filtered = applyExpenseFilters(FALLBACK_EXPENSES, filters);
+      const paginated = paginateExpenses(filtered, filters.page, filters.limit);
+      const totalSpent = filtered.reduce((sum, expense) => sum + expense.amount, 0);
+
+      return NextResponse.json({
+        expenses: paginated.data,
+        meta: {
+          page: paginated.page,
+          limit: paginated.limit,
+          total: paginated.total,
+          totalPages: paginated.totalPages,
+          hasMore: paginated.hasMore,
+          totalSpent
+        }
+      });
     }
 
     let query = supabase
       .from("expenses")
-      .select("id, amount, category, note, date, created_at")
+      .select("id, amount, category, note, date, created_at", { count: "exact" })
       .eq("user_id", user.id)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false });
 
-    if (startDate) query = query.gte("date", startDate);
-    if (endDate) query = query.lte("date", endDate);
-    if (category) query = query.eq("category", category);
+    if (filters.startDate) query = query.gte("date", filters.startDate);
+    if (filters.endDate) query = query.lte("date", filters.endDate);
+    if (filters.categories?.length) query = query.in("category", filters.categories);
+    if (typeof filters.minAmount === "number") query = query.gte("amount", filters.minAmount);
+    if (typeof filters.maxAmount === "number") query = query.lte("amount", filters.maxAmount);
+    if (filters.search) query = query.ilike("note", `%${filters.search}%`);
 
-    const { data, error } = await query;
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, count, error } = await query.range(from, to);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    const normalized = (data || []).map((expense) => normalizeExpense(expense));
+    let totalQuery = supabase.from("expenses").select("amount").eq("user_id", user.id);
+
+    if (filters.startDate) totalQuery = totalQuery.gte("date", filters.startDate);
+    if (filters.endDate) totalQuery = totalQuery.lte("date", filters.endDate);
+    if (filters.categories?.length) totalQuery = totalQuery.in("category", filters.categories);
+    if (typeof filters.minAmount === "number") totalQuery = totalQuery.gte("amount", filters.minAmount);
+    if (typeof filters.maxAmount === "number") totalQuery = totalQuery.lte("amount", filters.maxAmount);
+    if (filters.search) totalQuery = totalQuery.ilike("note", `%${filters.search}%`);
+
+    const { data: totalRows } = await totalQuery;
+    const totalSpent = (totalRows || []).reduce((sum, row) => sum + Number(row.amount), 0);
+
     return NextResponse.json({
-      expenses: (data || []).map((expense) => ({
-        ...expense,
-        amount: Number(expense.amount)
-      }))
+      expenses: normalized,
+      meta: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.max(Math.ceil((count || 0) / limit), 1),
+        hasMore: from + limit < (count || 0),
+        totalSpent
+      }
     });
   } catch (error) {
     return NextResponse.json(
@@ -184,8 +263,14 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
+  const ids = request.nextUrl.searchParams
+    .get("ids")
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const targetIds = ids?.length ? ids : id ? [id] : [];
 
-  if (!id) {
+  if (!targetIds.length) {
     return NextResponse.json({ error: "Expense id is required." }, { status: 400 });
   }
 
@@ -199,7 +284,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const { error } = await supabase.from("expenses").delete().eq("id", id).eq("user_id", user.id);
+    const { error } = await supabase.from("expenses").delete().in("id", targetIds).eq("user_id", user.id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -207,7 +292,7 @@ export async function DELETE(request: NextRequest) {
 
     const stats = await calculateUpdatedStats(user.id, supabase);
 
-    return NextResponse.json({ success: true, stats });
+    return NextResponse.json({ success: true, stats, deletedIds: targetIds });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to delete expense." },
