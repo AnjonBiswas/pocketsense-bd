@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { isOnline, queuePendingAction } from "@/lib/utils/pwa";
 import { useExpenseStore, type AddExpensePayload, type Expense } from "@/store/expenseStore";
 
 type ExpenseFilters = {
@@ -28,6 +29,20 @@ export function useExpenses() {
     store.addExpense(optimisticExpense);
 
     try {
+      if (!isOnline()) {
+        await queuePendingAction({
+          id: tempId,
+          type: "add-expense",
+          payload: data,
+          createdAt: new Date().toISOString()
+        });
+        store.showToast({
+          message: "Offline mode: expense saved locally and will sync when you reconnect.",
+          type: "success"
+        });
+        return { queued: true, expense: optimisticExpense };
+      }
+
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: {

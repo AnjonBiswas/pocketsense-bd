@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/dashboard/BottomNav";
+import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 import { ExpenseToast } from "@/components/dashboard/ExpenseToast";
 import { DashboardEmergencyShell } from "@/components/features/DashboardEmergencyShell";
 import { Navbar } from "@/components/dashboard/Navbar";
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
           userPhone={phone}
           avatarUrl={profile?.avatar_url}
         />
+        <MobileSidebar userName={profile?.name || "PocketSense User"} />
         <div className="mx-auto flex min-h-[calc(100vh-81px)] max-w-[1600px]">
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">

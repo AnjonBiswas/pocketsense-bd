@@ -1,15 +1,32 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { Download, RefreshCcw } from "lucide-react";
-import { SpendingTrendChart } from "@/components/reports/SpendingTrendChart";
-import { CategoryBreakdownChart } from "@/components/reports/CategoryBreakdownChart";
-import { IncomeVsExpenseChart } from "@/components/reports/IncomeVsExpenseChart";
-import { SpendingHeatmap } from "@/components/reports/SpendingHeatmap";
-import { InsightsPanel } from "@/components/reports/InsightsPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+
+const SpendingTrendChart = dynamic(
+  () => import("@/components/reports/SpendingTrendChart").then((module) => module.SpendingTrendChart),
+  { loading: () => <ChartSkeleton /> }
+);
+const CategoryBreakdownChart = dynamic(
+  () => import("@/components/reports/CategoryBreakdownChart").then((module) => module.CategoryBreakdownChart),
+  { loading: () => <ChartSkeleton /> }
+);
+const IncomeVsExpenseChart = dynamic(
+  () => import("@/components/reports/IncomeVsExpenseChart").then((module) => module.IncomeVsExpenseChart),
+  { loading: () => <ChartSkeleton /> }
+);
+const SpendingHeatmap = dynamic(
+  () => import("@/components/reports/SpendingHeatmap").then((module) => module.SpendingHeatmap),
+  { loading: () => <ChartSkeleton tall /> }
+);
+const InsightsPanel = dynamic(
+  () => import("@/components/reports/InsightsPanel").then((module) => module.InsightsPanel),
+  { loading: () => <ChartSkeleton /> }
+);
 
 type ReportsPayload = {
   startDate: string;
@@ -108,7 +125,7 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary">Reports</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900">Financial story dashboard</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-50">Financial story dashboard</h1>
           <p className="mt-2 text-sm text-muted-foreground">Professional charts, trends, and insights for your student budget.</p>
         </div>
 
@@ -184,22 +201,34 @@ function InputDatePair({
   const [localEndDate, setLocalEndDate] = useState(endDate);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-sm">
+    <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <input
         type="date"
         value={localStartDate}
         onChange={(event) => setLocalStartDate(event.target.value)}
-        className="rounded-full border border-slate-200 px-3 py-2 text-sm"
+        className="rounded-full border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
       />
       <input
         type="date"
         value={localEndDate}
         onChange={(event) => setLocalEndDate(event.target.value)}
-        className="rounded-full border border-slate-200 px-3 py-2 text-sm"
+        className="rounded-full border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
       />
       <Button type="button" className="rounded-full" onClick={() => onApply(localStartDate, localEndDate)}>
         Custom
       </Button>
+    </div>
+  );
+}
+
+function ChartSkeleton({ tall = false }: { tall?: boolean }) {
+  return (
+    <div
+      className={`rounded-[32px] border border-white/60 bg-white/90 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90 ${
+        tall ? "min-h-[340px]" : "min-h-[280px]"
+      }`}
+    >
+      <div className="h-full animate-pulse rounded-[24px] bg-slate-100 dark:bg-slate-800" />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Globe, LogOut, Settings, User2 } from "lucide-react";
+import { Globe, LogOut, Menu, Settings, User2 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
@@ -54,6 +54,15 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="tap-safe rounded-full xl:hidden"
+            onClick={() => window.dispatchEvent(new Event("pocketsense-open-sidebar"))}
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
           <NotificationCenter compact />
 
           <Button type="button" variant="outline" className="rounded-full" onClick={toggleLanguage}>
@@ -63,7 +72,7 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 rounded-full border border-white/60 bg-white px-2 py-1 pr-3 shadow-sm transition hover:bg-secondary/60">
+              <button className="flex items-center gap-3 rounded-full border border-white/60 bg-white px-2 py-1 pr-3 shadow-sm transition hover:bg-secondary/60 tap-safe">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarUrl} alt={userName} className="h-10 w-10 rounded-full object-cover" />

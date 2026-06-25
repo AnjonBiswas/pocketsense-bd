@@ -1,0 +1,59 @@
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+.tap-safe {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.mobile-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  top: auto;
+  width: 100%;
+  max-width: none;
+  transform: translate3d(0, 0, 0);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 1.25rem;
+}
+
+.safe-pb {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+}
+
+@media (min-width: 640px) {
+  .mobile-sheet {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    bottom: auto;
+    width: calc(100% - 2rem);
+    max-width: 32rem;
+    transform: translate(-50%, -50%);
+    border-left: 1px solid hsl(var(--border));
+    border-right: 1px solid hsl(var(--border));
+    border-bottom: 1px solid hsl(var(--border));
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    padding: 1.5rem;
+  }
+}

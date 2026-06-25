@@ -50,6 +50,7 @@ export function DailyBudgetCard({ dailyBudget, spentToday }: DailyBudgetCardProp
         <div className="space-y-2">
           <div className="h-3 overflow-hidden rounded-full bg-muted">
             <div
+              data-testid="daily-budget-progress"
               className={`h-full rounded-full transition-all ${tone.bar}`}
               style={{ width: `${Math.min(remainingPercentage, 100)}%` }}
             />
