@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { getCategoryMeta } from "@/lib/utils/categories";
-import { buildTuitionTracker } from "@/lib/utils/income";
+import { generateAlerts } from "@/lib/utils/alerts";
 
 const fallbackStats = {
   totalIncome: 18000,
@@ -22,9 +22,9 @@ const fallbackStats = {
 
 function buildFallbackAlerts() {
   return [
-    { type: "warning" as const, message: "You're spending 20% above average" },
-    { type: "info" as const, message: "Tuition payment due tomorrow" },
-    { type: "success" as const, message: "Friend owes you ৳120" }
+    { type: "warning" as const, title: "Overspending warning", message: "You're spending 20% above average." },
+    { type: "info" as const, title: "Tuition reminder", message: "Tuition payment due tomorrow." },
+    { type: "success" as const, title: "Friend owes money", message: "Friend owes you ৳120." }
   ];
 }
 
@@ -44,13 +44,15 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      const dailyBudget = calculateDailyBudget(
-        fallbackStats.totalIncome,
-        fallbackStats.fixedExpenses,
-        fallbackStats.totalExpenses,
-        fallbackStats.savingsGoal,
-        fallbackStats.daysRemaining
-      );
+      const dailyBudget = calculateDailyBudget({
+        totalIncome: fallbackStats.totalIncome,
+        recurringIncome: 6000,
+        totalExpenses: fallbackStats.totalExpenses,
+        savingsGoal: fallbackStats.savingsGoal,
+        emergencyReserve: fallbackStats.fixedExpenses,
+        daysInMonth: fallbackStats.daysInMonth,
+        currentDay: fallbackStats.daysElapsed
+      });
 
       return NextResponse.json({
         ...fallbackStats,
@@ -61,43 +63,50 @@ export async function GET() {
       });
     }
 
-    const [{ data: incomes }, { data: expenses }, { data: budget }, { data: challenges }] =
-      await Promise.all([
-        supabase
-          .from("incomes")
-          .select("id, amount, source, date, note, is_recurring, created_at")
-          .eq("user_id", user.id)
-          .gte("date", reminderStart)
-          .lte("date", monthEnd),
-        supabase
-          .from("expenses")
-          .select("amount, category, date, created_at")
-          .eq("user_id", user.id)
-          .gte("date", monthStart)
-          .lte("date", monthEnd)
-          .order("date", { ascending: false }),
-        supabase
-          .from("budgets")
-          .select("monthly_limit, savings_goal, emergency_reserve")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_challenges")
-          .select("status")
-          .eq("user_id", user.id)
-          .eq("status", "completed")
-      ]);
+    const [{ data: incomes }, { data: expenses }, { data: budget }, { data: challenges }] = await Promise.all([
+      supabase
+        .from("incomes")
+        .select("id, amount, source, date, note, is_recurring, created_at")
+        .eq("user_id", user.id)
+        .gte("date", reminderStart)
+        .lte("date", monthEnd),
+      supabase
+        .from("expenses")
+        .select("amount, category, date, created_at, note")
+        .eq("user_id", user.id)
+        .gte("date", monthStart)
+        .lte("date", monthEnd)
+        .order("date", { ascending: false }),
+      supabase
+        .from("budgets")
+        .select("monthly_limit, savings_goal, emergency_reserve")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_challenges")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("status", "completed")
+    ]);
 
     const normalizedIncomes = (incomes || []).map((income) => ({
       ...income,
       amount: Number(income.amount)
     }));
-    const totalIncome = normalizedIncomes
-      .filter((income) => income.date >= monthStart && income.date <= monthEnd)
+    const normalizedExpenses = (expenses || []).map((expense) => ({
+      ...expense,
+      amount: Number(expense.amount)
+    }));
+    const currentMonthIncomes = normalizedIncomes.filter(
+      (income) => income.date >= monthStart && income.date <= monthEnd
+    );
+    const totalIncome = currentMonthIncomes.reduce((sum, item) => sum + Number(item.amount), 0);
+    const recurringIncome = currentMonthIncomes
+      .filter((income) => income.is_recurring)
       .reduce((sum, item) => sum + Number(item.amount), 0);
-    const totalExpenses = (expenses || []).reduce((sum, item) => sum + Number(item.amount), 0);
+    const totalExpenses = normalizedExpenses.reduce((sum, item) => sum + Number(item.amount), 0);
     const todayKey = today.toISOString().slice(0, 10);
-    const spentToday = (expenses || [])
+    const spentToday = normalizedExpenses
       .filter((item) => item.date === todayKey)
       .reduce((sum, item) => sum + Number(item.amount), 0);
     const monthlyLimit = Number(budget?.monthly_limit || fallbackStats.monthlyLimit);
@@ -105,15 +114,17 @@ export async function GET() {
     const emergencyReserve = Number(budget?.emergency_reserve || fallbackStats.emergencyReserve);
     const fixedExpenses = emergencyReserve;
     const streak = Math.max((challenges || []).length, fallbackStats.streak);
-    const dailyBudget = calculateDailyBudget(
-      totalIncome || fallbackStats.totalIncome,
-      fixedExpenses,
+    const dailyBudget = calculateDailyBudget({
+      totalIncome: totalIncome || fallbackStats.totalIncome,
+      recurringIncome,
       totalExpenses,
       savingsGoal,
-      daysRemaining
-    );
+      emergencyReserve,
+      daysInMonth,
+      currentDay: daysElapsed
+    });
     const categoryTotals = Object.entries(
-      (expenses || []).reduce<Record<string, number>>((accumulator, item) => {
+      normalizedExpenses.reduce<Record<string, number>>((accumulator, item) => {
         accumulator[item.category] = (accumulator[item.category] || 0) + Number(item.amount);
         return accumulator;
       }, {})
@@ -125,10 +136,6 @@ export async function GET() {
         color: getCategoryMeta(category).color
       }))
       .sort((left, right) => right.amount - left.amount);
-
-    const tuitionAlert = buildTuitionTracker(normalizedIncomes).find((student) =>
-      student.reminderText.includes("due")
-    );
 
     return NextResponse.json({
       totalIncome: totalIncome || fallbackStats.totalIncome,
@@ -146,20 +153,27 @@ export async function GET() {
       dailyBudget,
       remainingBudget: Math.max(monthlyLimit - totalExpenses, 0),
       topCategories: categoryTotals,
-      alerts: [
-        { type: "warning", message: "You're spending 20% above average" },
-        { type: "info", message: tuitionAlert?.reminderText || "Tuition payment due tomorrow" },
-        { type: "success", message: "Friend owes you ৳120" }
-      ]
+      alerts: generateAlerts({
+        expenses: normalizedExpenses,
+        incomes: normalizedIncomes,
+        budget: {
+          monthly_limit: monthlyLimit,
+          savings_goal: savingsGoal,
+          emergency_reserve: emergencyReserve
+        },
+        currentDate: today
+      })
     });
   } catch {
-    const dailyBudget = calculateDailyBudget(
-      fallbackStats.totalIncome,
-      fallbackStats.fixedExpenses,
-      fallbackStats.totalExpenses,
-      fallbackStats.savingsGoal,
-      fallbackStats.daysRemaining
-    );
+    const dailyBudget = calculateDailyBudget({
+      totalIncome: fallbackStats.totalIncome,
+      recurringIncome: 6000,
+      totalExpenses: fallbackStats.totalExpenses,
+      savingsGoal: fallbackStats.savingsGoal,
+      emergencyReserve: fallbackStats.fixedExpenses,
+      daysInMonth: fallbackStats.daysInMonth,
+      currentDay: fallbackStats.daysElapsed
+    });
 
     return NextResponse.json({
       ...fallbackStats,

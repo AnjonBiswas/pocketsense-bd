@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type AlertItem = {
   type: "warning" | "info" | "success";
+  title?: string;
   message: string;
 };
 
@@ -40,7 +41,10 @@ export function AlertsCard({ alerts }: AlertsCardProps) {
             <div key={alert.message} className={`rounded-2xl border px-4 py-4 ${config.className}`}>
               <div className="flex items-start gap-3">
                 <Icon className="mt-0.5 h-5 w-5 shrink-0" />
-                <p className="text-sm/6 font-medium">{alert.message}</p>
+                <div>
+                  {alert.title ? <p className="text-sm font-semibold">{alert.title}</p> : null}
+                  <p className="text-sm/6 font-medium">{alert.message}</p>
+                </div>
               </div>
             </div>
           );
