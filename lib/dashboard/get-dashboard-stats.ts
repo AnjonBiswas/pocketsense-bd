@@ -24,6 +24,7 @@ export type DashboardStats = {
   }>;
   alerts: Array<{
     type: "warning" | "info" | "success";
+    title?: string;
     message: string;
   }>;
 };
