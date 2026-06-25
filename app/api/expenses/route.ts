@@ -1,7 +1,9 @@
 import { endOfMonth, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
+import { getSOSState, hashPIN } from "@/lib/sos/get-sos-state";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { calculateDailyBudget } from "@/lib/utils/budget";
+import { isLuxuryCategory } from "@/lib/utils/sosMode";
 import {
   FALLBACK_EXPENSES,
   applyExpenseFilters,
@@ -150,6 +152,41 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const sosState = await getSOSState(supabase, user.id);
+    const overrideEmergency = Boolean(body.overrideEmergency);
+    const unlockPin = typeof body.unlockPin === "string" ? body.unlockPin : "";
+
+    if (sosState.isActive && isLuxuryCategory(validation.value.category)) {
+      if (sosState.hasPin) {
+        const { data: sosRecord } = await supabase
+          .from("sos_modes")
+          .select("lock_pin_hash")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const isValid = unlockPin ? hashPIN(unlockPin) === sosRecord?.lock_pin_hash : false;
+
+        if (!isValid) {
+          return NextResponse.json(
+            {
+              error: "SOS mode is active. Enter your emergency PIN to continue.",
+              code: "SOS_PIN_REQUIRED",
+              sos: sosState
+            },
+            { status: 423 }
+          );
+        }
+      } else if (!overrideEmergency) {
+        return NextResponse.json(
+          {
+            error: "SOS mode is active. Confirm the emergency override before continuing.",
+            code: "SOS_WARNING",
+            sos: sosState
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const { data: expense, error } = await supabase
       .from("expenses")
       .insert({
@@ -164,6 +201,26 @@ export async function POST(request: NextRequest) {
     }
 
     const stats = await calculateUpdatedStats(user.id, supabase);
+
+    if (sosState.isActive) {
+      const { data: currentMode } = await supabase
+        .from("sos_modes")
+        .select("compliance_score")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const currentScore = Number(currentMode?.compliance_score || 0);
+      const nextScore = Math.max(
+        0,
+        Math.min(100, currentScore + (isLuxuryCategory(validation.value.category) ? -20 : 8))
+      );
+
+      await supabase
+        .from("sos_modes")
+        .update({
+          compliance_score: nextScore
+        })
+        .eq("user_id", user.id);
+    }
 
     return NextResponse.json({
       expense: normalizeExpense(expense),

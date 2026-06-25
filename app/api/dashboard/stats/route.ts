@@ -1,9 +1,12 @@
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { getSOSState } from "@/lib/sos/get-sos-state";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { getCategoryMeta } from "@/lib/utils/categories";
 import { generateAlerts } from "@/lib/utils/alerts";
+import type { DebtRecord, ReminderRecord } from "@/lib/utils/alerts";
+import type { Database } from "@/types/database.types";
 
 const fallbackStats = {
   totalIncome: 18000,
@@ -26,6 +29,31 @@ function buildFallbackAlerts() {
     { type: "info" as const, title: "Tuition reminder", message: "Tuition payment due tomorrow." },
     { type: "success" as const, title: "Friend owes money", message: "Friend owes you ৳120." }
   ];
+}
+
+async function fetchOptionalTableRows<TTable extends keyof Database["public"]["Tables"]>(
+  supabase: ReturnType<typeof createRouteHandlerClient>,
+  table: TTable,
+  selection: string,
+  userId: string
+) {
+  const rawClient = supabase as unknown as {
+    from: (tableName: string) => {
+      select: (columns: string) => {
+        eq: (
+          column: string,
+          value: string
+        ) => Promise<{ data: Record<string, unknown>[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+  const { data, error } = await rawClient.from(String(table)).select(selection).eq("user_id", userId);
+
+  if (error) {
+    return [];
+  }
+
+  return data || [];
 }
 
 export async function GET() {
@@ -59,11 +87,12 @@ export async function GET() {
         dailyBudget,
         remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
         topCategories: [],
-        alerts: buildFallbackAlerts()
+        alerts: buildFallbackAlerts(),
+        sos: await getSOSState(supabase, undefined)
       });
     }
 
-    const [{ data: incomes }, { data: expenses }, { data: budget }, { data: challenges }] = await Promise.all([
+    const [{ data: incomes }, { data: expenses }, { data: budget }, { data: challenges }, reminders, debts] = await Promise.all([
       supabase
         .from("incomes")
         .select("id, amount, source, date, note, is_recurring, created_at")
@@ -86,7 +115,9 @@ export async function GET() {
         .from("user_challenges")
         .select("status")
         .eq("user_id", user.id)
-        .eq("status", "completed")
+        .eq("status", "completed"),
+      fetchOptionalTableRows(supabase, "reminders", "id, user_id, kind, title, note, due_date, amount, status, created_at", user.id),
+      fetchOptionalTableRows(supabase, "debts", "id, user_id, friend_name, amount, direction, due_date, note, status, created_at", user.id)
     ]);
 
     const normalizedIncomes = (incomes || []).map((income) => ({
@@ -153,6 +184,7 @@ export async function GET() {
       dailyBudget,
       remainingBudget: Math.max(monthlyLimit - totalExpenses, 0),
       topCategories: categoryTotals,
+      sos: await getSOSState(supabase, user.id),
       alerts: generateAlerts({
         expenses: normalizedExpenses,
         incomes: normalizedIncomes,
@@ -161,7 +193,35 @@ export async function GET() {
           savings_goal: savingsGoal,
           emergency_reserve: emergencyReserve
         },
-        currentDate: today
+        currentDate: today,
+        reminders: reminders.map(
+          (reminder) =>
+            ({
+              id: String(reminder.id),
+              user_id: String(reminder.user_id),
+              kind: reminder.kind as ReminderRecord["kind"],
+              title: String(reminder.title),
+              note: reminder.note ? String(reminder.note) : null,
+              due_date: String(reminder.due_date),
+              amount: reminder.amount === null ? null : Number(reminder.amount),
+              status: reminder.status as ReminderRecord["status"],
+              created_at: reminder.created_at ? String(reminder.created_at) : undefined
+            }) satisfies ReminderRecord
+        ),
+        debts: debts.map(
+          (debt) =>
+            ({
+              id: String(debt.id),
+              user_id: String(debt.user_id),
+              friend_name: String(debt.friend_name),
+              amount: Number(debt.amount),
+              direction: debt.direction as DebtRecord["direction"],
+              due_date: debt.due_date ? String(debt.due_date) : null,
+              note: debt.note ? String(debt.note) : null,
+              status: debt.status as DebtRecord["status"],
+              created_at: debt.created_at ? String(debt.created_at) : undefined
+            }) satisfies DebtRecord
+        )
       })
     });
   } catch {
@@ -186,7 +246,8 @@ export async function GET() {
         { category: "mobile", amount: 720, percentage: 11, color: "#4BC0C0" },
         { category: "entertainment", amount: 620, percentage: 9, color: "#FF6B6B" }
       ],
-      alerts: buildFallbackAlerts()
+      alerts: buildFallbackAlerts(),
+      sos: await getSOSState(createRouteHandlerClient(), undefined)
     });
   }
 }
