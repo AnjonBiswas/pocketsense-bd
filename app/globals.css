@@ -24,6 +24,26 @@
     --radius: 1rem;
   }
 
+  .dark {
+    --background: 214 29% 10%;
+    --foreground: 45 37% 96%;
+    --card: 214 27% 13%;
+    --card-foreground: 45 37% 96%;
+    --primary: 165 70% 48%;
+    --primary-foreground: 214 29% 10%;
+    --secondary: 216 20% 18%;
+    --secondary-foreground: 45 37% 96%;
+    --muted: 215 18% 18%;
+    --muted-foreground: 215 12% 70%;
+    --accent: 20 45% 22%;
+    --accent-foreground: 34 100% 92%;
+    --destructive: 0 68% 58%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 216 20% 24%;
+    --input: 216 20% 24%;
+    --ring: 165 70% 48%;
+  }
+
   * {
     @apply border-border;
   }
@@ -31,4 +51,54 @@
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
   }
+}
+
+.react-calendar-heatmap text {
+  fill: #475569;
+  font-size: 10px;
+}
+
+.react-calendar-heatmap rect {
+  rx: 4;
+  ry: 4;
+}
+
+.react-calendar-heatmap .color-empty {
+  fill: #e2e8f0;
+}
+
+.react-calendar-heatmap .color-scale-1 {
+  fill: #bfdbfe;
+}
+
+.react-calendar-heatmap .color-scale-2 {
+  fill: #60a5fa;
+}
+
+.react-calendar-heatmap .color-scale-3 {
+  fill: #2563eb;
+}
+
+.react-calendar-heatmap .color-scale-4 {
+  fill: #1d4ed8;
+}
+
+.heatmap-swatch {
+  @apply inline-block h-3 w-5 rounded-sm;
+}
+
+.heatmap-1 {
+  background: #bfdbfe;
+}
+
+.heatmap-2 {
+  background: #60a5fa;
+}
+
+.heatmap-3 {
+  background: #2563eb;
+}
+
+.heatmap-4 {
+  background: #1d4ed8;
 }

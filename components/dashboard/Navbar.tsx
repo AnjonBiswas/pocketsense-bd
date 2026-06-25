@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Globe, LogOut, Settings, User2 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -53,6 +54,8 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <NotificationCenter compact />
+
           <Button type="button" variant="outline" className="rounded-full" onClick={toggleLanguage}>
             <Globe className="mr-2 h-4 w-4" />
             {language === "bn" ? t("common.english") : t("common.bangla")}
@@ -85,9 +88,11 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
                 <User2 className="h-4 w-4" />
                 {t("common.profile")}
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="h-4 w-4" />
-                {t("common.settings")}
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings">
+                  <Settings className="h-4 w-4" />
+                  {t("common.settings")}
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>

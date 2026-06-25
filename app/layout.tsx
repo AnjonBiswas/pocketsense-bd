@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hind_Siliguri } from "next/font/google";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 
 const hindSiliguri = Hind_Siliguri({
@@ -19,8 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={hindSiliguri.variable}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={hindSiliguri.variable}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -22,6 +22,23 @@ export type DashboardStats = {
     percentage: number;
     color: string;
   }>;
+  sos: {
+    shouldActivate: boolean;
+    severity: "warning" | "critical";
+    isActive: boolean;
+    remainingBudget: number;
+    daysRemaining: number;
+    dailyBudget: number;
+    activatedTips: string[];
+    projectedSavings: number;
+    canSurvive: boolean;
+    survivalTarget: number;
+    hasLockedFunds: boolean;
+    lockedAmount: number;
+    hasPin: boolean;
+    complianceScore: number;
+    luxuryWarning: string | null;
+  };
   alerts: Array<{
     type: "warning" | "info" | "success";
     title?: string;
