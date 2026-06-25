@@ -1,6 +1,8 @@
 import { BottomNav } from "@/components/dashboard/BottomNav";
 import { ExpenseToast } from "@/components/dashboard/ExpenseToast";
+import { DashboardEmergencyShell } from "@/components/features/DashboardEmergencyShell";
 import { Navbar } from "@/components/dashboard/Navbar";
+import { NotificationBannerShell } from "@/components/notifications/NotificationBannerShell";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { AddExpenseModal } from "@/components/modals/AddExpenseModal";
 import { FAB } from "@/components/ui/FAB";
@@ -52,7 +54,11 @@ export default async function DashboardLayout({
         <div className="mx-auto flex min-h-[calc(100vh-81px)] max-w-[1600px]">
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">
-            <main className="flex-1 px-4 py-5 pb-28 md:px-6 xl:px-8 xl:py-8 xl:pb-8">{children}</main>
+            <main className="flex-1 px-4 py-5 pb-28 md:px-6 xl:px-8 xl:py-8 xl:pb-8">
+              <NotificationBannerShell />
+              <DashboardEmergencyShell />
+              {children}
+            </main>
           </div>
         </div>
         <BottomNav />

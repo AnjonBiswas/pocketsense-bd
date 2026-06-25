@@ -1,25 +1,34 @@
-import { BarChart3 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { endOfMonth, format, startOfMonth } from "date-fns";
+import { headers } from "next/headers";
+import { ReportsDashboardClient } from "@/components/reports/ReportsDashboardClient";
 
-export default function ReportsPage() {
-  return (
-    <Card className="border-white/60 bg-white/85 shadow-sm backdrop-blur">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-sky-100 p-3 text-sky-900">
-            <BarChart3 className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle>রিপোর্ট</CardTitle>
-            <CardDescription>View trends, comparisons, and progress across your money habits.</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          This screen is ready for charts, monthly summaries, and squad-based spending insights.
-        </p>
-      </CardContent>
-    </Card>
-  );
+async function getInitialReports() {
+  const headerStore = headers();
+  const host = headerStore.get("host");
+  const protocol = headerStore.get("x-forwarded-proto") || (process.env.NODE_ENV === "development" ? "http" : "https");
+  const cookie = headerStore.get("cookie") || "";
+  const startDate = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const endDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
+
+  if (!host) {
+    throw new Error("Unable to resolve reports host.");
+  }
+
+  const response = await fetch(`${protocol}://${host}/api/reports?startDate=${startDate}&endDate=${endDate}`, {
+    cache: "no-store",
+    headers: {
+      cookie
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load reports.");
+  }
+
+  return response.json();
+}
+
+export default async function ReportsPage() {
+  const initialData = await getInitialReports();
+  return <ReportsDashboardClient initialData={initialData} />;
 }
