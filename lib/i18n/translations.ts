@@ -14,7 +14,9 @@ export const translations = {
     nav: {
       home: "হোম",
       expenses: "খরচ",
-      income: "আয়",
+      income: "আয়",
+      challenges: "চ্যালেঞ্জ",
+      squads: "স্কোয়াড",
       reports: "রিপোর্ট"
     },
     dashboard: {
@@ -27,9 +29,9 @@ export const translations = {
       weeklySpend: "এই সপ্তাহের খরচ",
       savingsGoal: "সেভিংস গোল",
       dailyTip: "আজকের টিপ",
-      dailyTipText: "ক্যান্টিনে একবার কম খেলে মাস শেষে বেশ কিছু টাকা বাঁচে।",
+      dailyTipText: "ক্যান্টিনে একবার কম খেলেও মাস শেষে ভালোই টাকা বাঁচে।",
       campusPulse: "ক্যাম্পাস পালস",
-      campusPulseText: "এই সপ্তাহে চা, যাতায়াত আর মোবাইল রিচার্জ সবচেয়ে বেশি খরচের জায়গা।",
+      campusPulseText: "চা, যাতায়াত, আর মোবাইল রিচার্জ এখন সবচেয়ে বেশি খরচের জায়গা।",
       streakText: "টানা ৫ দিন খরচ লিখেছেন",
       quickBudget: "মাসিক বাজেট",
       quickSavings: "জরুরি সঞ্চয়",
@@ -54,6 +56,8 @@ export const translations = {
       home: "Home",
       expenses: "Expenses",
       income: "Income",
+      challenges: "Challenges",
+      squads: "Squads",
       reports: "Reports"
     },
     dashboard: {

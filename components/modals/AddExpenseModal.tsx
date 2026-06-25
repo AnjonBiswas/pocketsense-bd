@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LoaderCircle } from "lucide-react";
-import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
-import { useExpenses } from "@/lib/hooks/useExpenses";
-import { useExpenseStore } from "@/store/expenseStore";
+import { useEffect, useMemo, useState } from "react";
+import { LoaderCircle, Sparkles } from "lucide-react";
+import { BudgetLock } from "@/components/features/BudgetLock";
+import { TreatCalculator } from "@/components/features/TreatCalculator";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,18 +15,57 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useExpenses } from "@/lib/hooks/useExpenses";
+import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
+import { useExpenseStore } from "@/store/expenseStore";
+
+type BudgetSnapshot = {
+  dailyBudget: number;
+  remainingBudget: number;
+  daysRemaining: number;
+};
+
+type SOSSnapshot = {
+  isActive: boolean;
+  shouldActivate: boolean;
+  severity: "warning" | "critical";
+  remainingBudget: number;
+  daysRemaining: number;
+  lockedAmount: number;
+  hasLockedFunds: boolean;
+  hasPin: boolean;
+  luxuryWarning: string | null;
+};
+
+const TREAT_CATEGORIES = new Set(["food", "cafe", "entertainment"]);
+const LUXURY_CATEGORIES = new Set(["cafe", "entertainment"]);
 
 export function AddExpenseModal() {
   const { addExpense } = useExpenses();
   const isOpen = useExpenseStore((state) => state.isAddExpenseOpen);
   const draftExpense = useExpenseStore((state) => state.draftExpense);
   const closeModal = useExpenseStore((state) => state.closeAddExpenseModal);
+  const showToast = useExpenseStore((state) => state.showToast);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("food");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingTreatView, setIsLoadingTreatView] = useState(false);
   const [error, setError] = useState("");
+  const [showTreatCalculator, setShowTreatCalculator] = useState(false);
+  const [budgetSnapshot, setBudgetSnapshot] = useState<BudgetSnapshot | null>(null);
+  const [sosSnapshot, setSosSnapshot] = useState<SOSSnapshot | null>(null);
+  const [overrideEmergency, setOverrideEmergency] = useState(false);
+  const [unlockPin, setUnlockPin] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isEmergencyUnlocked, setIsEmergencyUnlocked] = useState(false);
+
+  const numericAmount = useMemo(() => Number(amount), [amount]);
+  const isTreatCategory = TREAT_CATEGORIES.has(category);
+  const isLuxuryCategory = LUXURY_CATEGORIES.has(category);
+  const isLuxurySpendBlocked = Boolean(sosSnapshot?.isActive && isLuxuryCategory);
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,16 +77,80 @@ export function AddExpenseModal() {
     setNote(draftExpense.note || "");
     setDate(draftExpense.date || new Date().toISOString().slice(0, 10));
     setError("");
+    setShowTreatCalculator(false);
+    setBudgetSnapshot(null);
+    setSosSnapshot(null);
+    setOverrideEmergency(false);
+    setUnlockPin("");
+    setUnlockError("");
+    setIsEmergencyUnlocked(false);
   }, [draftExpense, isOpen]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
 
-    const numericAmount = Number(amount);
+    fetch("/api/sos", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (payload?.error) {
+          return;
+        }
 
-    if (!numericAmount || numericAmount <= 0) {
+        setSosSnapshot(payload);
+      })
+      .catch(() => null);
+  }, [isOpen]);
+
+  async function unlockEmergencyFunds() {
+    setUnlockError("");
+    setIsUnlocking(true);
+
+    try {
+      const response = await fetch("/api/sos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "unlock",
+          pin: unlockPin
+        })
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.unlocked) {
+        setUnlockError(payload?.error || "Incorrect PIN.");
+        return;
+      }
+
+      setIsEmergencyUnlocked(true);
+      setUnlockError("");
+      showToast({
+        type: "success",
+        message: "Emergency funds unlocked for this expense."
+      });
+    } finally {
+      setIsUnlocking(false);
+    }
+  }
+
+  async function submitExpense() {
+    const safeAmount = Number(amount);
+
+    if (!safeAmount || safeAmount <= 0) {
       setError("সঠিক টাকার পরিমাণ লিখুন।");
+      return;
+    }
+
+    if (isLuxurySpendBlocked && sosSnapshot?.hasPin && !isEmergencyUnlocked) {
+      setError("SOS mode চালু আছে। এই category-তে খরচ করতে PIN unlock লাগবে।");
+      return;
+    }
+
+    if (isLuxurySpendBlocked && !sosSnapshot?.hasPin && !overrideEmergency) {
+      setError("SOS mode warning দেখে override confirm করুন।");
       return;
     }
 
@@ -56,25 +158,77 @@ export function AddExpenseModal() {
 
     try {
       await addExpense({
-        amount: numericAmount,
+        amount: safeAmount,
         category,
         note,
-        date
+        date,
+        overrideEmergency,
+        unlockPin: isEmergencyUnlocked ? unlockPin : undefined
       });
       closeModal();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "খরচ যোগ করা যায়নি।");
+      setError(submitError instanceof Error ? submitError.message : "খরচ যোগ করা যায়নি।");
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+
+    if (!numericAmount || numericAmount <= 0) {
+      setError("সঠিক টাকার পরিমাণ লিখুন।");
+      return;
+    }
+
+    await submitExpense();
+  }
+
+  async function openTreatCalculator() {
+    setError("");
+
+    if (!numericAmount || numericAmount <= 0) {
+      setError("Treat calculator দেখার আগে amount লিখুন।");
+      return;
+    }
+
+    setIsLoadingTreatView(true);
+
+    try {
+      const response = await fetch("/api/dashboard/stats", { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload) {
+        throw new Error("Treat impact load করা যায়নি।");
+      }
+
+      setBudgetSnapshot({
+        dailyBudget: Number(payload.dailyBudget || 0),
+        remainingBudget: Number(payload.remainingBudget || 0),
+        daysRemaining: Number(payload.daysRemaining || 1)
+      });
+      setShowTreatCalculator(true);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : "Treat impact load করা যায়নি।");
+    } finally {
+      setIsLoadingTreatView(false);
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => (!open ? closeModal() : null)}>
-      <DialogContent>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          closeModal();
+        }
+      }}
+    >
+      <DialogContent className="max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>নতুন খরচ যোগ করো</DialogTitle>
-          <DialogDescription>Amount, category, note, and date দিয়ে দ্রুত expense save করো.</DialogDescription>
+          <DialogDescription>Amount, category, note, and date দিয়ে দ্রুত expense save করো.</DialogDescription>
         </DialogHeader>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -136,12 +290,91 @@ export function AddExpenseModal() {
             />
           </div>
 
+          {showTreatCalculator && budgetSnapshot ? (
+            <TreatCalculator
+              amount={numericAmount}
+              category={category}
+              currentDailyBudget={budgetSnapshot.dailyBudget}
+              remainingDays={budgetSnapshot.daysRemaining}
+              remainingBudget={budgetSnapshot.remainingBudget}
+              onTreatAnyway={submitExpense}
+              onSplitBill={() => {
+                setShowTreatCalculator(false);
+                setNote((current) =>
+                  current ? `${current} | Split bill` : `${getCategoryMeta(category).en} | Split bill`
+                );
+                showToast({
+                  type: "success",
+                  message: "Split bill noted. We can hook this into Squad Expense Manager next."
+                });
+              }}
+              onCancel={() => setShowTreatCalculator(false)}
+            />
+          ) : null}
+
+          {isLuxurySpendBlocked && sosSnapshot ? (
+            <div className="space-y-3 rounded-[28px] border border-red-200 bg-red-50/80 p-4">
+              <div>
+                <p className="font-semibold text-red-800">SOS spending warning</p>
+                <p className="mt-1 text-sm text-red-700">
+                  {sosSnapshot.luxuryWarning ||
+                    `Only ৳${sosSnapshot.remainingBudget} left for ${sosSnapshot.daysRemaining} days.`}
+                </p>
+              </div>
+
+              {sosSnapshot.hasLockedFunds ? (
+                <BudgetLock
+                  mode="unlock"
+                  lockedAmount={sosSnapshot.lockedAmount}
+                  hasPin={sosSnapshot.hasPin}
+                  pin={unlockPin}
+                  isSubmitting={isUnlocking}
+                  error={unlockError}
+                  onPinChange={setUnlockPin}
+                  onUnlock={unlockEmergencyFunds}
+                />
+              ) : null}
+
+              {!sosSnapshot.hasPin ? (
+                <button
+                  type="button"
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    overrideEmergency
+                      ? "bg-red-600 text-white"
+                      : "border border-red-200 bg-white text-red-700 hover:bg-red-100"
+                  }`}
+                  onClick={() => setOverrideEmergency((current) => !current)}
+                >
+                  {overrideEmergency ? "Override confirmed" : "Override warning and continue"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={closeModal}>
               Cancel
             </Button>
+
+            {isTreatCategory ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                disabled={isLoadingTreatView || isSubmitting}
+                onClick={openTreatCalculator}
+              >
+                {isLoadingTreatView ? (
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Calculate Treat
+              </Button>
+            ) : null}
+
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isSubmitting ? "Saving..." : "Submit Expense"}

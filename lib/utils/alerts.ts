@@ -14,6 +14,30 @@ export type BudgetRecord = {
   emergency_reserve: number;
 };
 
+export type ReminderRecord = {
+  id: string;
+  user_id?: string;
+  kind: "bill" | "tuition" | "budget_reset" | "custom";
+  title: string;
+  note: string | null;
+  due_date: string;
+  amount: number | null;
+  status: "pending" | "completed" | "cancelled";
+  created_at?: string;
+};
+
+export type DebtRecord = {
+  id: string;
+  user_id?: string;
+  friend_name: string;
+  amount: number;
+  direction: "owed_to_me" | "i_owe";
+  due_date: string | null;
+  note: string | null;
+  status: "pending" | "settled";
+  created_at?: string;
+};
+
 export type Alert = {
   type: "warning" | "info" | "success";
   title: string;
@@ -25,10 +49,12 @@ export type GenerateAlertsInput = {
   incomes: IncomeRecord[];
   budget: BudgetRecord;
   currentDate: Date;
+  reminders?: ReminderRecord[];
+  debts?: DebtRecord[];
 };
 
 export function generateAlerts(userData: GenerateAlertsInput): Alert[] {
-  const { expenses, incomes, budget, currentDate } = userData;
+  const { expenses, incomes, budget, currentDate, reminders = [], debts = [] } = userData;
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = monthEnd.getDate();
@@ -71,32 +97,63 @@ export function generateAlerts(userData: GenerateAlertsInput): Alert[] {
     });
   }
 
-  const billExpense = currentMonthExpenses.find((expense) =>
+  const pendingBillReminder = reminders
+    .filter((reminder) => reminder.kind === "bill" && reminder.status === "pending")
+    .sort((left, right) => left.due_date.localeCompare(right.due_date))[0];
+  const fallbackBillExpense = currentMonthExpenses.find((expense) =>
     /(bill|tuition|rent|internet|wifi|mobile recharge|semester)/i.test(expense.note || "")
   );
-  if (billExpense) {
+  if (pendingBillReminder) {
     alerts.push({
       type: "info",
       title: "Bill due reminder",
-      message: `Keep room in your budget for "${billExpense.note}" before month end.`
+      message: `${pendingBillReminder.title} is due on ${pendingBillReminder.due_date}${
+        pendingBillReminder.amount ? ` for ৳${pendingBillReminder.amount.toFixed(0)}` : ""
+      }.`
+    });
+  } else if (fallbackBillExpense) {
+    alerts.push({
+      type: "info",
+      title: "Bill due reminder",
+      message: `Keep room in your budget for "${fallbackBillExpense.note}" before month end.`
     });
   }
 
-  const tuitionReminder = buildTuitionTracker(incomes, currentDate).find((student) =>
+  const dedicatedTuitionReminder = reminders
+    .filter((reminder) => reminder.kind === "tuition" && reminder.status === "pending")
+    .sort((left, right) => left.due_date.localeCompare(right.due_date))[0];
+  const inferredTuitionReminder = buildTuitionTracker(incomes, currentDate).find((student) =>
     /due|pending/i.test(student.reminderText)
   );
-  if (tuitionReminder) {
+  if (dedicatedTuitionReminder) {
     alerts.push({
       type: "info",
       title: "Tuition reminder",
-      message: tuitionReminder.reminderText
+      message: `${dedicatedTuitionReminder.title} is due on ${dedicatedTuitionReminder.due_date}.`
+    });
+  } else if (inferredTuitionReminder) {
+    alerts.push({
+      type: "info",
+      title: "Tuition reminder",
+      message: inferredTuitionReminder.reminderText
     });
   }
 
+  const pendingDebt = debts
+    .filter((debt) => debt.status === "pending" && debt.direction === "owed_to_me")
+    .sort((left, right) => right.amount - left.amount)[0];
   const owedExpense = currentMonthExpenses.find((expense) =>
     /(owe|owes|split|borrowed|due from friend)/i.test(expense.note || "")
   );
-  if (owedExpense?.note) {
+  if (pendingDebt) {
+    alerts.push({
+      type: "info",
+      title: "Friend owes money",
+      message: `${pendingDebt.friend_name} owes you ৳${pendingDebt.amount.toFixed(0)}${
+        pendingDebt.due_date ? ` by ${pendingDebt.due_date}` : ""
+      }.`
+    });
+  } else if (owedExpense?.note) {
     alerts.push({
       type: "info",
       title: "Friend owes money",
@@ -113,11 +170,16 @@ export function generateAlerts(userData: GenerateAlertsInput): Alert[] {
     });
   }
 
-  if (currentDay === 1) {
+  const budgetResetReminder = reminders.find(
+    (reminder) => reminder.kind === "budget_reset" && reminder.status === "pending"
+  );
+  if (currentDay === 1 || budgetResetReminder) {
     alerts.push({
       type: "success",
       title: "Budget reset",
-      message: "New month, fresh budget. Review your targets before spending starts climbing."
+      message:
+        budgetResetReminder?.note ||
+        "New month, fresh budget. Review your targets before spending starts climbing."
     });
   }
 

@@ -17,6 +17,8 @@ export type AddExpensePayload = {
   category: string;
   note?: string;
   date: string;
+  overrideEmergency?: boolean;
+  unlockPin?: string;
 };
 
 type ExpenseFilters = {
