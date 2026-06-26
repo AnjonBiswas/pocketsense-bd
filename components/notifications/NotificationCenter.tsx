@@ -77,11 +77,11 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          className={`relative rounded-full border border-white/60 bg-white shadow-sm transition hover:bg-secondary/60 ${
+          className={`relative rounded-full border border-white/60 bg-white shadow-sm transition hover:bg-secondary/60 dark:border-slate-700 dark:bg-slate-900 ${
             compact ? "p-2.5" : "p-3"
           }`}
         >
-          <Bell className="h-5 w-5 text-slate-700" />
+          <Bell className="h-5 w-5 text-slate-700 dark:text-slate-100" />
           {unreadCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -90,9 +90,9 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[360px] rounded-[28px] p-0 sm:w-[420px]">
-        <div className="border-b border-slate-100 px-5 py-4">
+        <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
           <div className="flex items-center justify-between gap-3">
-            <DropdownMenuLabel className="p-0 text-base font-semibold text-slate-900">
+            <DropdownMenuLabel className="p-0 text-base font-semibold text-slate-900 dark:text-slate-50">
               Notifications
             </DropdownMenuLabel>
             <div className="flex items-center gap-2">

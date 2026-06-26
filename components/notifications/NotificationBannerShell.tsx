@@ -2,33 +2,55 @@
 
 import { useEffect, useState } from "react";
 import { AlertBanner } from "@/components/notifications/AlertBanner";
-import type { NotificationRecord } from "@/lib/notifications/notificationService";
+
+type DashboardStatsPayload = {
+  dailyBudget: number;
+  alerts: Array<{
+    type: "warning" | "info" | "success";
+    title?: string;
+    message: string;
+  }>;
+};
 
 export function NotificationBannerShell() {
-  const [notification, setNotification] = useState<NotificationRecord | null>(null);
+  const [banner, setBanner] = useState<{
+    type: "info" | "warning" | "error" | "success";
+    title: string;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
-    fetch("/api/notifications", { cache: "no-store" })
+    fetch("/api/dashboard/stats", { cache: "no-store" })
       .then((response) => response.json())
-      .then((payload) => {
-        const firstUnread = (payload?.notifications || []).find(
-          (item: NotificationRecord) => !item.read
-        );
-        setNotification(firstUnread || null);
+      .then((payload: DashboardStatsPayload) => {
+        if (payload?.dailyBudget > 0) {
+          setBanner({
+            type: "info",
+            title: "আজকের বাজেট রিমাইন্ডার",
+            message: `আজ নিরাপদ খরচ সীমা প্রায় ৳${payload.dailyBudget.toFixed(0)}।`
+          });
+          return;
+        }
+
+        const firstAlert = payload?.alerts?.[0];
+
+        if (!firstAlert) {
+          setBanner(null);
+          return;
+        }
+
+        setBanner({
+          type: firstAlert.type,
+          title: firstAlert.title || "PocketSense update",
+          message: firstAlert.message
+        });
       })
-      .catch(() => null);
+      .catch(() => setBanner(null));
   }, []);
 
-  if (!notification) {
+  if (!banner) {
     return null;
   }
 
-  const bannerType =
-    notification.type === "overspending" || notification.type === "bill_due" || notification.type === "sos"
-      ? "warning"
-      : notification.type === "challenge_completion" || notification.type === "streak_milestone"
-        ? "success"
-        : "info";
-
-  return <AlertBanner type={bannerType} title={notification.title} message={notification.message} />;
+  return <AlertBanner type={banner.type} title={banner.title} message={banner.message} />;
 }
