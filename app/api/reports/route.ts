@@ -1,6 +1,8 @@
 import { endOfMonth, format, parseISO, startOfMonth, subMonths } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
+import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { compareSpendingWithAverage, predictNextMonthExpensesByCategory } from "@/lib/ml/expensePredictor";
 import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
 import { FALLBACK_EXPENSES, normalizeExpense } from "@/lib/utils/expenses";
 import { generateInsights } from "@/lib/utils/insights";
@@ -40,6 +42,20 @@ type ReportResponse = {
     count: number;
   }>;
   insights: ReturnType<typeof generateInsights>;
+  forecast: Array<{
+    category: string;
+    label: string;
+    predictedAmount: number;
+    trend: "up" | "down" | "steady";
+  }>;
+  studentComparison: Array<{
+    category: string;
+    label: string;
+    current: number;
+    average: number;
+    deltaPercent: number;
+    insight: string;
+  }>;
 };
 
 function buildFallbackIncomes(startDate: string, endDate: string): IncomeRecord[] {
@@ -157,7 +173,13 @@ function buildHeatmap(expenses: ReturnType<typeof normalizeExpense>[]) {
   }));
 }
 
-function buildResponse(startDate: string, endDate: string, expenses: ReturnType<typeof normalizeExpense>[], incomes: IncomeRecord[]): ReportResponse {
+function buildResponse(
+  startDate: string,
+  endDate: string,
+  expenses: ReturnType<typeof normalizeExpense>[],
+  incomes: IncomeRecord[],
+  historicalExpenses: ReturnType<typeof normalizeExpense>[] = expenses
+): ReportResponse {
   const totalIncome = incomes.reduce((sum, income) => sum + Number(income.amount), 0);
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const savings = totalIncome - totalExpenses;
@@ -181,13 +203,25 @@ function buildResponse(startDate: string, endDate: string, expenses: ReturnType<
     },
     categoryBreakdown: buildCategoryBreakdown(expenses),
     dailySpending: buildDailySpending(expenses, startDate, endDate, totalIncome),
-    monthlyComparison: buildMonthlyComparison(expenses, incomes, endDate),
+    monthlyComparison: buildMonthlyComparison(historicalExpenses, incomes, endDate),
     heatmap: buildHeatmap(expenses),
-    insights: generateInsights(expenses, incomes, previousPeriodData)
+    insights: generateInsights(expenses, incomes, previousPeriodData),
+    forecast: predictNextMonthExpensesByCategory(historicalExpenses),
+    studentComparison: compareSpendingWithAverage(expenses).slice(0, 4)
   };
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimited = enforceRateLimit(request, {
+    key: "reports",
+    limit: 60,
+    windowMs: 60_000
+  });
+
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   const startDate = request.nextUrl.searchParams.get("startDate") || format(startOfMonth(new Date()), "yyyy-MM-dd");
   const endDate = request.nextUrl.searchParams.get("endDate") || format(endOfMonth(new Date()), "yyyy-MM-dd");
 
@@ -200,15 +234,20 @@ export async function GET(request: NextRequest) {
     if (!user) {
       const incomes = buildFallbackIncomes(startDate, endDate);
       const expenses = FALLBACK_EXPENSES.filter((expense) => expense.date >= startDate && expense.date <= endDate);
-      return NextResponse.json(buildResponse(startDate, endDate, expenses, incomes));
+      return applyCacheHeaders(
+        NextResponse.json(buildResponse(startDate, endDate, expenses, incomes, FALLBACK_EXPENSES)),
+        { maxAge: 30, staleWhileRevalidate: 180 }
+      );
     }
+
+    const historyStartDate = format(startOfMonth(subMonths(parseISO(startDate), 3)), "yyyy-MM-dd");
 
     const [{ data: expenseRows, error: expenseError }, { data: incomeRows, error: incomeError }] = await Promise.all([
       supabase
         .from("expenses")
         .select("id, amount, category, note, date, created_at")
         .eq("user_id", user.id)
-        .gte("date", startDate)
+        .gte("date", historyStartDate)
         .lte("date", endDate)
         .order("date", { ascending: true }),
       supabase
@@ -224,19 +263,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: expenseError?.message || incomeError?.message || "Failed to fetch reports." }, { status: 400 });
     }
 
-    const expenses = (expenseRows || []).map((expense) => normalizeExpense(expense));
+    const allExpenses = (expenseRows || []).map((expense) => normalizeExpense(expense));
+    const expenses = allExpenses.filter((expense) => expense.date >= startDate && expense.date <= endDate);
     const incomes = (incomeRows || []).map((income) => ({
       ...income,
       amount: Number(income.amount)
     }));
 
-    return NextResponse.json(buildResponse(startDate, endDate, expenses, incomes));
+    return applyCacheHeaders(
+      NextResponse.json(buildResponse(startDate, endDate, expenses, incomes, allExpenses)),
+      { maxAge: 30, staleWhileRevalidate: 180 }
+    );
   } catch (error) {
     const incomes = buildFallbackIncomes(startDate, endDate);
     const expenses = FALLBACK_EXPENSES.filter((expense) => expense.date >= startDate && expense.date <= endDate);
-    return NextResponse.json(buildResponse(startDate, endDate, expenses, incomes), {
-      status: error instanceof Error ? 200 : 200
-    });
+    return applyCacheHeaders(
+      NextResponse.json(buildResponse(startDate, endDate, expenses, incomes, FALLBACK_EXPENSES), {
+        status: error instanceof Error ? 200 : 200
+      }),
+      { maxAge: 30, staleWhileRevalidate: 180 }
+    );
   }
 }
-

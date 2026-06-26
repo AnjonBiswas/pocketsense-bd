@@ -13,7 +13,88 @@ type FixedExpensePayload = {
 function mapGiftFrequencyToAmount(frequency: string) {
   if (frequency === "often") return 1200;
   if (frequency === "sometimes") return 600;
-  return 250;
+  return 0;
+}
+
+function validateOnboardingPayload(body: {
+  step?: number;
+  complete?: boolean;
+  profile?: {
+    name?: string;
+    university?: string;
+    academic_year?: string;
+    semester?: string;
+  };
+  income?: {
+    allowance?: number;
+    hasTuition?: boolean;
+    tuitionAmount?: number;
+    hasFreelance?: boolean;
+    freelanceAmount?: number;
+  };
+  budget?: {
+    savingsGoal?: number;
+    emergencyReserve?: number;
+    fixedExpenses?: FixedExpensePayload[];
+  };
+}) {
+  const targetStep = Math.min(Math.max(Number(body.step || 1), 1), 5);
+  const profile = body.profile || {};
+  const income = body.income || {};
+  const budget = body.budget || {};
+  const allowance = income.allowance === null || income.allowance === undefined ? null : Number(income.allowance);
+  const tuitionAmount = income.tuitionAmount === null || income.tuitionAmount === undefined ? null : Number(income.tuitionAmount);
+  const freelanceAmount =
+    income.freelanceAmount === null || income.freelanceAmount === undefined ? null : Number(income.freelanceAmount);
+  const savingsGoal =
+    budget.savingsGoal === null || budget.savingsGoal === undefined ? null : Number(budget.savingsGoal);
+  const emergencyReserve =
+    budget.emergencyReserve === null || budget.emergencyReserve === undefined ? null : Number(budget.emergencyReserve);
+
+  if (targetStep >= 3 || body.complete) {
+    if (!profile.name?.trim()) return "Name is required.";
+    if (!profile.university?.trim()) return "University is required.";
+    if (!profile.academic_year?.trim()) return "Academic year is required.";
+    if (!profile.semester?.trim()) return "Semester is required.";
+  }
+
+  if (targetStep >= 4 || body.complete) {
+    if (allowance === null) {
+      return "Monthly allowance is required. Use 0 if not applicable.";
+    }
+
+    if (income.hasTuition && (!tuitionAmount || tuitionAmount <= 0)) {
+      return "Tuition income amount is required.";
+    }
+
+    if (income.hasFreelance && (!freelanceAmount || freelanceAmount <= 0)) {
+      return "Freelance income amount is required.";
+    }
+
+    if ((allowance || 0) + (tuitionAmount || 0) + (freelanceAmount || 0) <= 0) {
+      return "At least one income amount is required.";
+    }
+  }
+
+  if (targetStep >= 5 || body.complete) {
+    if (savingsGoal === null) {
+      return "Savings goal is required. Use 0 if you do not want one yet.";
+    }
+
+    if (emergencyReserve === null) {
+      return "Emergency reserve is required. Use 0 if you do not want one yet.";
+    }
+
+    const invalidFixedExpense = (budget.fixedExpenses || []).find(
+      (item) => !item.title?.trim() || Number(item.amount) <= 0
+    );
+
+    if (invalidFixedExpense) {
+      return "Fixed expense items must include a title and amount.";
+    }
+  }
+
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -23,6 +104,7 @@ export async function POST(request: NextRequest) {
         complete?: boolean;
         profile?: {
           name?: string;
+          phone?: string;
           university?: string;
           academic_year?: string;
           semester?: string;
@@ -43,11 +125,18 @@ export async function POST(request: NextRequest) {
           fixedExpenses?: FixedExpensePayload[];
           firstDayOfMonth?: number;
         };
+        referralCode?: string | null;
       }
     | null;
 
   if (!body) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const validationError = validateOnboardingPayload(body);
+
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   try {
@@ -70,6 +159,7 @@ export async function POST(request: NextRequest) {
 
     const profileUpdate = {
       name: profilePayload.name?.trim() || null,
+      phone: profilePayload.phone?.trim() || null,
       university: profilePayload.university?.trim() || null,
       academic_year: profilePayload.academic_year?.trim() || null,
       semester: profilePayload.semester?.trim() || null,
@@ -90,6 +180,7 @@ export async function POST(request: NextRequest) {
       Number(budgetPayload.monthlyLimit || 0) ||
       Math.max(allowance + tuitionAmount + freelanceAmount + giftAmount - savingsGoal - emergencyReserve - fixedExpenseTotal, 0);
     const currentMonthDate = `${new Date().toISOString().slice(0, 7)}-01`;
+    const referralCode = body.referralCode?.trim() || null;
 
     await supabase
       .from("incomes")
@@ -107,7 +198,7 @@ export async function POST(request: NextRequest) {
           user_id: user.id,
           language: "bn",
           currency: "BDT",
-          theme: "system",
+          theme: "light",
           first_day_of_month: firstDayOfMonth
         },
         { onConflict: "user_id" }
@@ -176,6 +267,60 @@ export async function POST(request: NextRequest) {
           due_day: item.due_day || null
         }))
       );
+    }
+
+    if (Boolean(body.complete) && referralCode) {
+      const { data: seedReferral } = await supabase
+        .from("referrals")
+        .select("referrer_user_id")
+        .eq("referral_code", referralCode)
+        .is("referred_user_id", null)
+        .neq("referrer_user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (seedReferral?.referrer_user_id) {
+        const { data: existingClaim } = await supabase
+          .from("referrals")
+          .select("id")
+          .eq("referral_code", referralCode)
+          .eq("referred_user_id", user.id)
+          .maybeSingle();
+
+        if (!existingClaim) {
+          await supabase.from("referrals").insert({
+            referrer_user_id: seedReferral.referrer_user_id,
+            referred_user_id: user.id,
+            referred_phone: user.phone || null,
+            referral_code: referralCode,
+            reward_xp: 500,
+            status: "completed",
+            completed_at: new Date().toISOString()
+          });
+
+          const [{ data: referrerProfile }, { data: referredProfile }] = await Promise.all([
+            supabase.from("profiles").select("xp, level").eq("id", seedReferral.referrer_user_id).maybeSingle(),
+            supabase.from("profiles").select("xp, level").eq("id", user.id).maybeSingle()
+          ]);
+
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .update({
+                xp: Number(referrerProfile?.xp || 0) + 500,
+                level: Math.floor((Number(referrerProfile?.xp || 0) + 500) / 1000)
+              })
+              .eq("id", seedReferral.referrer_user_id),
+            supabase
+              .from("profiles")
+              .update({
+                xp: Number(referredProfile?.xp || 0) + 500,
+                level: Math.floor((Number(referredProfile?.xp || 0) + 500) / 1000)
+              })
+              .eq("id", user.id)
+          ]);
+        }
+      }
     }
 
     return NextResponse.json({

@@ -1,7 +1,9 @@
 import { endOfMonth, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
+import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
 import { getSOSState, hashPIN } from "@/lib/sos/get-sos-state";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { fetchPaginatedExpenses } from "@/lib/supabase/queries";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { isLuxuryCategory } from "@/lib/utils/sosMode";
 import {
@@ -56,12 +58,12 @@ async function calculateUpdatedStats(userId: string, supabase: ReturnType<typeof
 
   const totalIncome = (incomes || []).reduce((sum, item) => sum + Number(item.amount), 0);
   const totalExpenses = (expenses || []).reduce((sum, item) => sum + Number(item.amount), 0);
-  const savingsGoal = Number(budget?.savings_goal || 3000);
-  const fixedExpenses = Number(budget?.emergency_reserve || 2500);
-  const monthlyLimit = Number(budget?.monthly_limit || 12000);
+  const savingsGoal = Number(budget?.savings_goal ?? 0);
+  const fixedExpenses = Number(budget?.emergency_reserve ?? 0);
+  const monthlyLimit = Number(budget?.monthly_limit ?? 0);
 
   return {
-    dailyBudget: calculateDailyBudget(totalIncome || 18000, fixedExpenses, totalExpenses, savingsGoal, daysRemaining),
+    dailyBudget: calculateDailyBudget(totalIncome, fixedExpenses, totalExpenses, savingsGoal, daysRemaining),
     totalExpenses,
     remainingBudget: Math.max(monthlyLimit - totalExpenses, 0)
   };
@@ -235,6 +237,16 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimited = enforceRateLimit(request, {
+    key: "expenses-list",
+    limit: 120,
+    windowMs: 60_000
+  });
+
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   const filters = parseFilters(request);
 
   try {
@@ -248,68 +260,31 @@ export async function GET(request: NextRequest) {
       const paginated = paginateExpenses(filtered, filters.page, filters.limit);
       const totalSpent = filtered.reduce((sum, expense) => sum + expense.amount, 0);
 
-      return NextResponse.json({
-        expenses: paginated.data,
-        meta: {
-          page: paginated.page,
-          limit: paginated.limit,
-          total: paginated.total,
-          totalPages: paginated.totalPages,
-          hasMore: paginated.hasMore,
-          totalSpent
-        }
-      });
+      return applyCacheHeaders(
+        NextResponse.json({
+          expenses: paginated.data,
+          meta: {
+            page: paginated.page,
+            limit: paginated.limit,
+            total: paginated.total,
+            totalPages: paginated.totalPages,
+            hasMore: paginated.hasMore,
+            totalSpent
+          }
+        }),
+        { maxAge: 15, staleWhileRevalidate: 60 }
+      );
     }
 
-    let query = supabase
-      .from("expenses")
-      .select("id, amount, category, note, date, created_at", { count: "exact" })
-      .eq("user_id", user.id)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
+    const result = await fetchPaginatedExpenses(supabase, user.id, filters);
 
-    if (filters.startDate) query = query.gte("date", filters.startDate);
-    if (filters.endDate) query = query.lte("date", filters.endDate);
-    if (filters.categories?.length) query = query.in("category", filters.categories);
-    if (typeof filters.minAmount === "number") query = query.gte("amount", filters.minAmount);
-    if (typeof filters.maxAmount === "number") query = query.lte("amount", filters.maxAmount);
-    if (filters.search) query = query.ilike("note", `%${filters.search}%`);
-
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data, count, error } = await query.range(from, to);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    const normalized = (data || []).map((expense) => normalizeExpense(expense));
-    let totalQuery = supabase.from("expenses").select("amount").eq("user_id", user.id);
-
-    if (filters.startDate) totalQuery = totalQuery.gte("date", filters.startDate);
-    if (filters.endDate) totalQuery = totalQuery.lte("date", filters.endDate);
-    if (filters.categories?.length) totalQuery = totalQuery.in("category", filters.categories);
-    if (typeof filters.minAmount === "number") totalQuery = totalQuery.gte("amount", filters.minAmount);
-    if (typeof filters.maxAmount === "number") totalQuery = totalQuery.lte("amount", filters.maxAmount);
-    if (filters.search) totalQuery = totalQuery.ilike("note", `%${filters.search}%`);
-
-    const { data: totalRows } = await totalQuery;
-    const totalSpent = (totalRows || []).reduce((sum, row) => sum + Number(row.amount), 0);
-
-    return NextResponse.json({
-      expenses: normalized,
-      meta: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.max(Math.ceil((count || 0) / limit), 1),
-        hasMore: from + limit < (count || 0),
-        totalSpent
-      }
-    });
+    return applyCacheHeaders(
+      NextResponse.json({
+        expenses: result.data.map((expense) => normalizeExpense(expense)),
+        meta: result.meta
+      }),
+      { maxAge: 15, staleWhileRevalidate: 60 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch expenses." },

@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(limit);
 
-    const payload = (expenses || fallbackExpenses).map((expense) => ({
+    const payload = (expenses || []).map((expense) => ({
       ...expense,
       amount: Number(expense.amount),
       categoryDetails: getCategoryMeta(expense.category),
@@ -64,6 +64,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(payload);
   } catch {
+    const supabase = createRouteHandlerClient();
+    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+
+    if (authResult.data.user) {
+      return NextResponse.json([]);
+    }
+
     return NextResponse.json(
       fallbackExpenses.slice(0, limit).map((expense) => ({
         ...expense,

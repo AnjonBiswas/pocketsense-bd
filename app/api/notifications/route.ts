@@ -130,13 +130,13 @@ export async function GET(request: NextRequest) {
             amount: Number(income.amount)
           })),
           budget: {
-            monthly_limit: Number(budget?.monthly_limit || 12000),
-            savings_goal: Number(budget?.savings_goal || 3000),
-            emergency_reserve: Number(budget?.emergency_reserve || 2500)
+            monthly_limit: Number(budget?.monthly_limit ?? 0),
+            savings_goal: Number(budget?.savings_goal ?? 0),
+            emergency_reserve: Number(budget?.emergency_reserve ?? 0)
           },
           reminders: reminders as ReminderRecord[],
           debts: debts as DebtRecord[],
-          streak: sos.isActive ? Math.round(sos.complianceScore / 10) : 3,
+          streak: sos.isActive ? Math.round(sos.complianceScore / 10) : 0,
           completedChallenges: (challenges || []).length,
           currentDate: today
         }),
