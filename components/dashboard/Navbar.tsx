@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Globe, LogOut, Menu, Settings, User2 } from "lucide-react";
+import { Globe, LogOut, Menu, Moon, Settings, Sun, User2 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +32,7 @@ function getInitials(name: string) {
 export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
   const router = useRouter();
   const { language, toggleLanguage, t } = useLanguage();
+  const { resolvedTheme, setTheme } = useTheme();
 
   async function handleLogout() {
     const result = await signOut();
@@ -41,7 +44,7 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/50 bg-white/85 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-white/50 bg-white/85 backdrop-blur dark:border-slate-700 dark:bg-slate-950/85">
       <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-6">
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/20">
@@ -65,6 +68,25 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
 
           <NotificationCenter compact />
 
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          >
+            {resolvedTheme === "dark" ? (
+              <>
+                <Sun className="mr-2 h-4 w-4" />
+                Light
+              </>
+            ) : (
+              <>
+                <Moon className="mr-2 h-4 w-4" />
+                Dark
+              </>
+            )}
+          </Button>
+
           <Button type="button" variant="outline" className="rounded-full" onClick={toggleLanguage}>
             <Globe className="mr-2 h-4 w-4" />
             {language === "bn" ? t("common.english") : t("common.bangla")}
@@ -72,10 +94,15 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 rounded-full border border-white/60 bg-white px-2 py-1 pr-3 shadow-sm transition hover:bg-secondary/60 tap-safe">
+              <button className="flex items-center gap-3 rounded-full border border-white/60 bg-white px-2 py-1 pr-3 shadow-sm transition hover:bg-secondary/60 tap-safe dark:border-slate-700 dark:bg-slate-900">
                 {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt={userName} className="h-10 w-10 rounded-full object-cover" />
+                  <Image
+                    src={avatarUrl}
+                    alt={userName}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground">
                     {getInitials(userName)}

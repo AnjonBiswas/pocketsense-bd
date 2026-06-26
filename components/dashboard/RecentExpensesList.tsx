@@ -24,7 +24,7 @@ export function RecentExpensesList() {
   );
 
   return (
-    <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur">
+    <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <div>
           <CardTitle className="text-lg">Recent expenses</CardTitle>
@@ -46,7 +46,7 @@ export function RecentExpensesList() {
       </CardHeader>
       <CardContent className="space-y-3">
         {visibleExpenses.length === 0 ? (
-          <div className="rounded-2xl bg-secondary/45 px-4 py-6 text-sm text-muted-foreground">
+          <div className="rounded-2xl bg-secondary/45 px-4 py-6 text-sm text-muted-foreground dark:bg-slate-900/75">
             এখনো কোনো খরচ যোগ করা হয়নি।
           </div>
         ) : null}
@@ -57,7 +57,7 @@ export function RecentExpensesList() {
           return (
             <div
               key={expense.id}
-              className="flex items-center justify-between rounded-2xl bg-secondary/45 px-4 py-3"
+              className="flex items-center justify-between rounded-2xl bg-secondary/45 px-4 py-3 dark:bg-slate-900/75"
             >
               <div className="flex items-center gap-3">
                 <div

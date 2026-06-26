@@ -35,7 +35,7 @@ export function DailyBudgetCard({ dailyBudget, spentToday }: DailyBudgetCardProp
   const tone = getBudgetTone(remainingPercentage);
 
   return (
-    <Card className="overflow-hidden border-white/60 bg-white/90 shadow-sm backdrop-blur">
+    <Card className="overflow-hidden border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
       <CardHeader className="space-y-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">আজকের বাজেট</CardTitle>

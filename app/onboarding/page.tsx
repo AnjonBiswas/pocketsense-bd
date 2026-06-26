@@ -54,19 +54,28 @@ export default async function OnboardingPage() {
       academic_year: profile?.academic_year || "",
       semester: profile?.semester || "",
       avatar_url: profile?.avatar_url || null,
-      phone: profile?.phone || user.phone || "+880"
+      phone: profile?.phone || ""
     },
     income: {
-      allowance: Number(incomes?.find((item) => item.source === "allowance")?.amount || 0),
+      allowance: incomes?.find((item) => item.source === "allowance")?.amount
+        ? Number(incomes.find((item) => item.source === "allowance")?.amount)
+        : null,
       hasTuition: Boolean(incomes?.some((item) => item.source === "tuition")),
-      tuitionAmount: Number(incomes?.find((item) => item.source === "tuition")?.amount || 0),
+      tuitionAmount: incomes?.find((item) => item.source === "tuition")?.amount
+        ? Number(incomes.find((item) => item.source === "tuition")?.amount)
+        : null,
       hasFreelance: Boolean(incomes?.some((item) => item.source === "freelance")),
-      freelanceAmount: Number(incomes?.find((item) => item.source === "freelance")?.amount || 0),
+      freelanceAmount: incomes?.find((item) => item.source === "freelance")?.amount
+        ? Number(incomes.find((item) => item.source === "freelance")?.amount)
+        : null,
       giftFrequency: "rarely"
     },
     budget: {
-      savingsGoal: Number(budgets?.savings_goal || 0),
-      emergencyReserve: Number(budgets?.emergency_reserve || 0),
+      savingsGoal: budgets?.savings_goal === null || budgets?.savings_goal === undefined ? null : Number(budgets.savings_goal),
+      emergencyReserve:
+        budgets?.emergency_reserve === null || budgets?.emergency_reserve === undefined
+          ? null
+          : Number(budgets.emergency_reserve),
       fixedExpenses: (fixedExpenses || []).map((item) => ({
         id: item.id,
         title: item.title,

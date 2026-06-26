@@ -1,5 +1,6 @@
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { getSOSState } from "@/lib/sos/get-sos-state";
 import { calculateDailyBudget } from "@/lib/utils/budget";
@@ -23,12 +24,48 @@ const fallbackStats = {
   spentToday: 350
 };
 
+const emptyUserStats = {
+  totalIncome: 0,
+  totalExpenses: 0,
+  fixedExpenses: 0,
+  savingsGoal: 0,
+  monthlyLimit: 0,
+  emergencyReserve: 0,
+  streak: 0,
+  monthlyRank: "Getting Started",
+  spentToday: 0,
+  entriesToday: 0
+};
+
 function buildFallbackAlerts() {
   return [
     { type: "warning" as const, title: "Overspending warning", message: "You're spending 20% above average." },
     { type: "info" as const, title: "Tuition reminder", message: "Tuition payment due tomorrow." },
     { type: "success" as const, title: "Friend owes money", message: "Friend owes you ৳120." }
   ];
+}
+
+async function buildEmptyAuthenticatedResponse(
+  supabase: ReturnType<typeof createRouteHandlerClient>,
+  userId: string | undefined,
+  daysElapsed: number,
+  daysInMonth: number,
+  daysRemaining: number
+) {
+  return applyCacheHeaders(
+    NextResponse.json({
+      ...emptyUserStats,
+      daysElapsed,
+      daysInMonth,
+      daysRemaining,
+      dailyBudget: 0,
+      remainingBudget: 0,
+      topCategories: [],
+      alerts: [],
+      sos: await getSOSState(supabase, userId)
+    }),
+    { maxAge: 20, staleWhileRevalidate: 120 }
+  );
 }
 
 async function fetchOptionalTableRows<TTable extends keyof Database["public"]["Tables"]>(
@@ -56,7 +93,7 @@ async function fetchOptionalTableRows<TTable extends keyof Database["public"]["T
   return data || [];
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const today = new Date();
   const monthStart = startOfMonth(today).toISOString().slice(0, 10);
   const monthEnd = endOfMonth(today).toISOString().slice(0, 10);
@@ -66,6 +103,16 @@ export async function GET() {
   const daysRemaining = Math.max(daysInMonth - daysElapsed, 1);
 
   try {
+    const rateLimited = enforceRateLimit(request, {
+      key: "dashboard-stats",
+      limit: 90,
+      windowMs: 60_000
+    });
+
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     const supabase = createRouteHandlerClient();
     const {
       data: { user }
@@ -82,14 +129,18 @@ export async function GET() {
         currentDay: fallbackStats.daysElapsed
       });
 
-      return NextResponse.json({
-        ...fallbackStats,
-        dailyBudget,
-        remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
-        topCategories: [],
-        alerts: buildFallbackAlerts(),
-        sos: await getSOSState(supabase, undefined)
-      });
+      return applyCacheHeaders(
+        NextResponse.json({
+          ...fallbackStats,
+          entriesToday: 3,
+          dailyBudget,
+          remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
+          topCategories: [],
+          alerts: buildFallbackAlerts(),
+          sos: await getSOSState(supabase, undefined)
+        }),
+        { maxAge: 20, staleWhileRevalidate: 120 }
+      );
     }
 
     const [{ data: incomes }, { data: expenses }, { data: budget }, { data: challenges }, reminders, debts] = await Promise.all([
@@ -140,13 +191,13 @@ export async function GET() {
     const spentToday = normalizedExpenses
       .filter((item) => item.date === todayKey)
       .reduce((sum, item) => sum + Number(item.amount), 0);
-    const monthlyLimit = Number(budget?.monthly_limit || fallbackStats.monthlyLimit);
-    const savingsGoal = Number(budget?.savings_goal || fallbackStats.savingsGoal);
-    const emergencyReserve = Number(budget?.emergency_reserve || fallbackStats.emergencyReserve);
+    const monthlyLimit = Number(budget?.monthly_limit ?? emptyUserStats.monthlyLimit);
+    const savingsGoal = Number(budget?.savings_goal ?? emptyUserStats.savingsGoal);
+    const emergencyReserve = Number(budget?.emergency_reserve ?? emptyUserStats.emergencyReserve);
     const fixedExpenses = emergencyReserve;
-    const streak = Math.max((challenges || []).length, fallbackStats.streak);
+    const streak = (challenges || []).length;
     const dailyBudget = calculateDailyBudget({
-      totalIncome: totalIncome || fallbackStats.totalIncome,
+      totalIncome,
       recurringIncome,
       totalExpenses,
       savingsGoal,
@@ -168,63 +219,75 @@ export async function GET() {
       }))
       .sort((left, right) => right.amount - left.amount);
 
-    return NextResponse.json({
-      totalIncome: totalIncome || fallbackStats.totalIncome,
-      totalExpenses,
-      fixedExpenses,
-      savingsGoal,
-      monthlyLimit,
-      emergencyReserve,
-      streak,
-      monthlyRank: streak >= 7 ? "Top Saver" : fallbackStats.monthlyRank,
-      daysElapsed,
-      daysInMonth,
-      daysRemaining,
-      spentToday,
-      dailyBudget,
-      remainingBudget: Math.max(monthlyLimit - totalExpenses, 0),
-      topCategories: categoryTotals,
-      sos: await getSOSState(supabase, user.id),
-      alerts: generateAlerts({
-        expenses: normalizedExpenses,
-        incomes: normalizedIncomes,
-        budget: {
-          monthly_limit: monthlyLimit,
-          savings_goal: savingsGoal,
-          emergency_reserve: emergencyReserve
-        },
-        currentDate: today,
-        reminders: reminders.map(
-          (reminder) =>
-            ({
-              id: String(reminder.id),
-              user_id: String(reminder.user_id),
-              kind: reminder.kind as ReminderRecord["kind"],
-              title: String(reminder.title),
-              note: reminder.note ? String(reminder.note) : null,
-              due_date: String(reminder.due_date),
-              amount: reminder.amount === null ? null : Number(reminder.amount),
-              status: reminder.status as ReminderRecord["status"],
-              created_at: reminder.created_at ? String(reminder.created_at) : undefined
-            }) satisfies ReminderRecord
-        ),
-        debts: debts.map(
-          (debt) =>
-            ({
-              id: String(debt.id),
-              user_id: String(debt.user_id),
-              friend_name: String(debt.friend_name),
-              amount: Number(debt.amount),
-              direction: debt.direction as DebtRecord["direction"],
-              due_date: debt.due_date ? String(debt.due_date) : null,
-              note: debt.note ? String(debt.note) : null,
-              status: debt.status as DebtRecord["status"],
-              created_at: debt.created_at ? String(debt.created_at) : undefined
-            }) satisfies DebtRecord
-        )
-      })
-    });
+    return applyCacheHeaders(
+      NextResponse.json({
+        totalIncome,
+        totalExpenses,
+        fixedExpenses,
+        savingsGoal,
+        monthlyLimit,
+        emergencyReserve,
+        streak,
+        monthlyRank: streak >= 7 ? "Top Saver" : emptyUserStats.monthlyRank,
+        daysElapsed,
+        daysInMonth,
+        daysRemaining,
+        spentToday,
+        entriesToday: normalizedExpenses.filter((item) => item.date === todayKey).length,
+        dailyBudget,
+        remainingBudget: Math.max(monthlyLimit - totalExpenses, 0),
+        topCategories: categoryTotals,
+        sos: await getSOSState(supabase, user.id),
+        alerts: generateAlerts({
+          expenses: normalizedExpenses,
+          incomes: normalizedIncomes,
+          budget: {
+            monthly_limit: monthlyLimit,
+            savings_goal: savingsGoal,
+            emergency_reserve: emergencyReserve
+          },
+          currentDate: today,
+          reminders: reminders.map(
+            (reminder) =>
+              ({
+                id: String(reminder.id),
+                user_id: String(reminder.user_id),
+                kind: reminder.kind as ReminderRecord["kind"],
+                title: String(reminder.title),
+                note: reminder.note ? String(reminder.note) : null,
+                due_date: String(reminder.due_date),
+                amount: reminder.amount === null ? null : Number(reminder.amount),
+                status: reminder.status as ReminderRecord["status"],
+                created_at: reminder.created_at ? String(reminder.created_at) : undefined
+              }) satisfies ReminderRecord
+          ),
+          debts: debts.map(
+            (debt) =>
+              ({
+                id: String(debt.id),
+                user_id: String(debt.user_id),
+                friend_name: String(debt.friend_name),
+                amount: Number(debt.amount),
+                direction: debt.direction as DebtRecord["direction"],
+                due_date: debt.due_date ? String(debt.due_date) : null,
+                note: debt.note ? String(debt.note) : null,
+                status: debt.status as DebtRecord["status"],
+                created_at: debt.created_at ? String(debt.created_at) : undefined
+              }) satisfies DebtRecord
+          )
+        })
+      }),
+      { maxAge: 20, staleWhileRevalidate: 120 }
+    );
   } catch {
+    const supabase = createRouteHandlerClient();
+    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const user = authResult.data.user;
+
+    if (user) {
+      return buildEmptyAuthenticatedResponse(supabase, user.id, daysElapsed, daysInMonth, daysRemaining);
+    }
+
     const dailyBudget = calculateDailyBudget({
       totalIncome: fallbackStats.totalIncome,
       recurringIncome: 6000,
@@ -235,19 +298,23 @@ export async function GET() {
       currentDay: fallbackStats.daysElapsed
     });
 
-    return NextResponse.json({
-      ...fallbackStats,
-      dailyBudget,
-      remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
-      topCategories: [
-        { category: "food", amount: 2400, percentage: 36, color: "#FF6384" },
-        { category: "transport", amount: 1300, percentage: 19, color: "#36A2EB" },
-        { category: "cafe", amount: 980, percentage: 15, color: "#FFCE56" },
-        { category: "mobile", amount: 720, percentage: 11, color: "#4BC0C0" },
-        { category: "entertainment", amount: 620, percentage: 9, color: "#FF6B6B" }
-      ],
-      alerts: buildFallbackAlerts(),
-      sos: await getSOSState(createRouteHandlerClient(), undefined)
-    });
+    return applyCacheHeaders(
+      NextResponse.json({
+        ...fallbackStats,
+        entriesToday: 3,
+        dailyBudget,
+        remainingBudget: Math.max(fallbackStats.monthlyLimit - fallbackStats.totalExpenses, 0),
+        topCategories: [
+          { category: "food", amount: 2400, percentage: 36, color: "#FF6384" },
+          { category: "transport", amount: 1300, percentage: 19, color: "#36A2EB" },
+          { category: "cafe", amount: 980, percentage: 15, color: "#FFCE56" },
+          { category: "mobile", amount: 720, percentage: 11, color: "#4BC0C0" },
+          { category: "entertainment", amount: 620, percentage: 9, color: "#FF6B6B" }
+        ],
+        alerts: buildFallbackAlerts(),
+        sos: await getSOSState(supabase, undefined)
+      }),
+      { maxAge: 20, staleWhileRevalidate: 120 }
+    );
   }
 }

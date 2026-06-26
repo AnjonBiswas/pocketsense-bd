@@ -16,7 +16,7 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["Hind Siliguri", "system-ui", "sans-serif"]
+        sans: ["var(--font-hind-siliguri)", "system-ui", "sans-serif"]
       },
       colors: {
         border: "hsl(var(--border))",

@@ -31,7 +31,7 @@ export function TopCategoriesCard() {
   }, [expenses]);
 
   return (
-    <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur">
+    <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
       <CardHeader>
         <CardTitle className="text-lg">Top categories</CardTitle>
         <CardDescription>এই মাসে কোন জায়গায় সবচেয়ে বেশি খরচ হয়েছে</CardDescription>
@@ -63,7 +63,7 @@ export function TopCategoriesCard() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center rounded-3xl bg-secondary/40 text-sm text-muted-foreground">
+            <div className="flex h-full items-center justify-center rounded-3xl bg-secondary/40 text-sm text-muted-foreground dark:bg-slate-900/80">
               No spending data yet
             </div>
           )}
@@ -81,7 +81,7 @@ export function TopCategoriesCard() {
                 className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
                   isActive
                     ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-white/60 bg-secondary/40 hover:bg-secondary/70"
+                    : "border-white/60 bg-secondary/40 hover:bg-secondary/70 dark:border-slate-700 dark:bg-slate-900/75 dark:hover:bg-slate-800"
                 }`}
                 onClick={() => setCategoryFilter(isActive ? undefined : item.category)}
               >
