@@ -111,7 +111,7 @@ export async function getSOSState(
     category: string;
   }>;
   const totalExpenses = safeExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const monthlyLimit = Number(budget?.monthly_limit || 12000);
+  const monthlyLimit = Number(budget?.monthly_limit ?? 0);
   const remainingBudget = Math.max(monthlyLimit - totalExpenses, 0);
   const baselineDailyBudget = roundCurrency(remainingBudget / daysRemaining);
   const condition = checkSOSCondition(remainingBudget, daysRemaining);

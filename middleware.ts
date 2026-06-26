@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createMiddlewareClient } from "@/lib/supabase/server";
 
 const PUBLIC_PATHS = ["/", "/privacy-policy", "/terms-of-service"];
+const AUTH_PATHS = ["/auth/login", "/auth/signup"];
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
@@ -10,6 +11,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/auth/callback") ||
     pathname.includes(".")
   ) {
     return response;
@@ -21,6 +23,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    if (pathname.startsWith("/dashboard") || pathname === "/onboarding") {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+
     if (pathname === "/onboarding") {
       return NextResponse.redirect(new URL("/", request.url));
     }
@@ -36,6 +42,10 @@ export async function middleware(request: NextRequest) {
 
   const onboardingCompleted = Boolean(profile?.onboarding_completed);
 
+  if (AUTH_PATHS.includes(pathname)) {
+    return NextResponse.redirect(new URL(onboardingCompleted ? "/dashboard" : "/onboarding", request.url));
+  }
+
   if (!onboardingCompleted && pathname !== "/onboarding") {
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
@@ -44,7 +54,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (PUBLIC_PATHS.includes(pathname)) {
+  if (PUBLIC_PATHS.includes(pathname) || AUTH_PATHS.includes(pathname)) {
     return response;
   }
 

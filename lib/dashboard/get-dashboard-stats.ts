@@ -14,6 +14,7 @@ export type DashboardStats = {
   daysInMonth: number;
   daysRemaining: number;
   spentToday: number;
+  entriesToday: number;
   dailyBudget: number;
   remainingBudget: number;
   topCategories: Array<{

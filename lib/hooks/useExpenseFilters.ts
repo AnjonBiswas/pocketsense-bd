@@ -31,7 +31,7 @@ function detectPreset(startDate: string, endDate: string): FilterPreset {
   return "custom";
 }
 
-export function useExpenseFilters(defaultLimit = 10) {
+export function useExpenseFilters(defaultLimit = 20) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
