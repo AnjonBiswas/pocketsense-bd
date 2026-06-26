@@ -258,15 +258,15 @@ export function AddExpenseModal() {
         }
       }}
     >
-      <DialogContent className="max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl sm:p-0">
+        <DialogHeader className="border-b border-slate-200/70 px-5 pb-4 pt-6 sm:px-7 sm:pb-5">
           <DialogTitle>নতুন খরচ যোগ করো</DialogTitle>
           <DialogDescription>Amount, category, note, and date দিয়ে দ্রুত expense save করো.</DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <div className="rounded-[28px] border border-white/60 bg-white/80 p-4 shadow-sm">
-            <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+        <form className="space-y-6 px-5 pb-5 pt-5 sm:px-7 sm:pb-7" onSubmit={handleSubmit}>
+          <div className="rounded-[30px] border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm sm:p-5">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] xl:items-stretch">
               <div className="space-y-3">
                 <ReceiptScanner
                   onExtract={({ amount: scannedAmount, date: scannedDate, merchant, note: scannedNote, category: scannedCategory, receiptUrl: scannedReceiptUrl }) => {
@@ -281,19 +281,26 @@ export function AddExpenseModal() {
                   }}
                 />
               </div>
-              <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5">
                 <ThemeIllustration
                   lightSrc="/illustrations/receipt-light.svg"
                   darkSrc="/illustrations/receipt-dark.svg"
                   alt="Receipt helper"
-                  className="mx-auto h-32 w-full object-contain"
+                  className="mx-auto h-36 w-full max-w-sm object-contain xl:h-40"
                 />
-                <p className="mt-3 text-sm font-medium text-slate-900 dark:text-slate-50">Smart expense entry</p>
-                <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                  Scan receipts or upload a sheet. We will prefill amount, date, merchant, and suggest the best category.
-                </p>
+                <div className="mt-4 space-y-2">
+                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Smart expense entry</p>
+                  <p className="text-sm leading-7 text-muted-foreground">
+                    Scan receipts or upload a sheet. We will prefill amount, date, merchant, and suggest the best category.
+                  </p>
+                </div>
                 {receiptUrl ? (
-                  <a href={receiptUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-xs font-medium text-primary">
+                  <a
+                    href={receiptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex text-sm font-medium text-primary"
+                  >
                     View uploaded receipt
                   </a>
                 ) : null}
@@ -316,7 +323,7 @@ export function AddExpenseModal() {
 
           <div className="space-y-3">
             <Label>Category</Label>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {Object.entries(CATEGORIES).map(([key, value]) => {
                 const isActive = category === key;
 
@@ -327,7 +334,7 @@ export function AddExpenseModal() {
                     className={`rounded-2xl border px-3 py-3 text-left transition ${
                       isActive
                         ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-white/60 bg-secondary/40 hover:bg-secondary/70"
+                        : "border-slate-200 bg-white hover:bg-secondary/70"
                     }`}
                     onClick={() => {
                       setCategory(key);

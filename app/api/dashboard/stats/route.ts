@@ -201,28 +201,29 @@ export async function GET(request: NextRequest) {
       (income) => income.date >= monthStart && income.date <= monthEnd
     );
     const totalIncome = currentMonthIncomes.reduce((sum, item) => sum + Number(item.amount), 0);
-    const recurringIncome = currentMonthIncomes
-      .filter((income) => income.is_recurring)
-      .reduce((sum, item) => sum + Number(item.amount), 0);
     const totalExpenses = normalizedExpenses.reduce((sum, item) => sum + Number(item.amount), 0);
     const todayKey = today.toISOString().slice(0, 10);
     const spentToday = normalizedExpenses
       .filter((item) => item.date === todayKey)
+      .reduce((sum, item) => sum + Number(item.amount), 0);
+    const expensesBeforeToday = normalizedExpenses
+      .filter((item) => item.date < todayKey)
       .reduce((sum, item) => sum + Number(item.amount), 0);
     const monthlyLimit = Number(budget?.monthly_limit ?? emptyUserStats.monthlyLimit);
     const savingsGoal = Number(budget?.savings_goal ?? emptyUserStats.savingsGoal);
     const emergencyReserve = Number(budget?.emergency_reserve ?? emptyUserStats.emergencyReserve);
     const fixedExpenses = emergencyReserve;
     const streak = (challenges || []).length;
-    const dailyBudget = calculateDailyBudget({
-      totalIncome,
-      recurringIncome,
-      totalExpenses,
-      savingsGoal,
-      emergencyReserve,
-      daysInMonth,
-      currentDay: daysElapsed
-    });
+    const remainingSpendDays = Math.max(daysInMonth - daysElapsed + 1, 1);
+    const dailyBudget = Math.max(
+      Number(
+        (
+          (totalIncome - expensesBeforeToday - savingsGoal - emergencyReserve) /
+          remainingSpendDays
+        ).toFixed(2)
+      ),
+      0
+    );
     const categoryTotals = Object.entries(
       normalizedExpenses.reduce<Record<string, number>>((accumulator, item) => {
         accumulator[item.category] = (accumulator[item.category] || 0) + Number(item.amount);

@@ -136,25 +136,42 @@ export function ReceiptScanner({ onExtract }: ReceiptScannerProps) {
   }
 
   return (
-    <div className="space-y-3 rounded-[28px] border border-violet-100 bg-violet-50/70 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-violet-950">Receipt scanner</p>
-          <p className="text-xs text-violet-900/80">Camera capture, image upload, and spreadsheet receipt parsing with Bangla OCR support.</p>
+    <div className="space-y-4 rounded-[28px] border border-violet-200/80 bg-violet-50/80 p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1.5">
+          <p className="text-base font-semibold text-violet-950">Receipt scanner</p>
+          <p className="max-w-xl text-sm leading-6 text-violet-900/80">
+            Camera capture, image upload, and spreadsheet receipt parsing with Bangla OCR support.
+          </p>
         </div>
         <ScanSearch className="h-5 w-5 text-violet-700" />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-3">
-        <Button type="button" variant="outline" className="rounded-2xl" onClick={() => cameraInputRef.current?.click()}>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto min-h-[56px] justify-start rounded-2xl border-violet-200 bg-white px-4 py-3 text-left whitespace-normal"
+          onClick={() => cameraInputRef.current?.click()}
+        >
           <Camera className="mr-2 h-4 w-4" />
           Camera
         </Button>
-        <Button type="button" variant="outline" className="rounded-2xl" onClick={() => fileInputRef.current?.click()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto min-h-[56px] justify-start rounded-2xl border-violet-200 bg-white px-4 py-3 text-left whitespace-normal"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <Upload className="mr-2 h-4 w-4" />
           Image / PDF
         </Button>
-        <Button type="button" variant="outline" className="rounded-2xl" onClick={() => fileInputRef.current?.click()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto min-h-[56px] justify-start rounded-2xl border-violet-200 bg-white px-4 py-3 text-left whitespace-normal"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <FileText className="mr-2 h-4 w-4" />
           Excel / CSV
         </Button>
@@ -189,7 +206,7 @@ export function ReceiptScanner({ onExtract }: ReceiptScannerProps) {
       />
 
       {isProcessing ? (
-        <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-3 text-sm text-violet-900 shadow-sm">
+        <div className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-violet-900 shadow-sm">
           <LoaderCircle className="h-4 w-4 animate-spin" />
           {status}
         </div>
@@ -197,10 +214,10 @@ export function ReceiptScanner({ onExtract }: ReceiptScannerProps) {
 
       {previewUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={previewUrl} alt="Receipt preview" className="h-36 w-full rounded-2xl object-cover" />
+        <img src={previewUrl} alt="Receipt preview" className="h-44 w-full rounded-2xl object-cover sm:h-52" />
       ) : null}
 
-      {status && !isProcessing ? <p className="text-xs text-violet-900/80">{status}</p> : null}
+      {status && !isProcessing ? <p className="text-sm leading-6 text-violet-900/80">{status}</p> : null}
     </div>
   );
 }
