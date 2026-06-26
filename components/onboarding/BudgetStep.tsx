@@ -14,8 +14,8 @@ type FixedExpense = {
 
 type BudgetStepProps = {
   value: {
-    savingsGoal: number;
-    emergencyReserve: number;
+    savingsGoal: number | null;
+    emergencyReserve: number | null;
     fixedExpenses: FixedExpense[];
     firstDayOfMonth: number;
   };
@@ -26,6 +26,15 @@ type BudgetStepProps = {
 };
 
 export function BudgetStep({ value, safeDailyBudget, onChange, onNext, onPrevious }: BudgetStepProps) {
+  function parseNumberInput(input: string) {
+    if (!input.trim()) {
+      return null;
+    }
+
+    const amount = Number(input);
+    return Number.isFinite(amount) ? amount : null;
+  }
+
   function addFixedExpense() {
     onChange({
       fixedExpenses: [
@@ -62,8 +71,9 @@ export function BudgetStep({ value, safeDailyBudget, onChange, onNext, onPreviou
           <Input
             id="savings-goal"
             type="number"
-            value={value.savingsGoal}
-            onChange={(event) => onChange({ savingsGoal: Number(event.target.value) })}
+            value={value.savingsGoal ?? ""}
+            onChange={(event) => onChange({ savingsGoal: parseNumberInput(event.target.value) })}
+            placeholder="Enter 0 if you want to decide later"
           />
         </div>
         <div className="space-y-2">
@@ -71,8 +81,9 @@ export function BudgetStep({ value, safeDailyBudget, onChange, onNext, onPreviou
           <Input
             id="emergency-reserve"
             type="number"
-            value={value.emergencyReserve}
-            onChange={(event) => onChange({ emergencyReserve: Number(event.target.value) })}
+            value={value.emergencyReserve ?? ""}
+            onChange={(event) => onChange({ emergencyReserve: parseNumberInput(event.target.value) })}
+            placeholder="Enter 0 if you do not want a reserve yet"
           />
         </div>
         <div className="space-y-2 md:col-span-2">

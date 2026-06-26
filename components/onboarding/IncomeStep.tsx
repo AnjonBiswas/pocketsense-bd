@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label";
 
 type IncomeStepProps = {
   value: {
-    allowance: number;
+    allowance: number | null;
     hasTuition: boolean;
-    tuitionAmount: number;
+    tuitionAmount: number | null;
     hasFreelance: boolean;
-    freelanceAmount: number;
+    freelanceAmount: number | null;
     giftFrequency: "rarely" | "sometimes" | "often";
   };
   onChange: (value: Partial<IncomeStepProps["value"]>) => void;
@@ -19,6 +19,15 @@ type IncomeStepProps = {
 };
 
 export function IncomeStep({ value, onChange, onNext, onPrevious }: IncomeStepProps) {
+  function parseNumberInput(input: string) {
+    if (!input.trim()) {
+      return null;
+    }
+
+    const amount = Number(input);
+    return Number.isFinite(amount) ? amount : null;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,8 +43,9 @@ export function IncomeStep({ value, onChange, onNext, onPrevious }: IncomeStepPr
           <Input
             id="allowance"
             type="number"
-            value={value.allowance}
-            onChange={(event) => onChange({ allowance: Number(event.target.value) })}
+            value={value.allowance ?? ""}
+            onChange={(event) => onChange({ allowance: parseNumberInput(event.target.value) })}
+            placeholder="Enter 0 if you do not receive allowance"
           />
         </div>
 
@@ -53,8 +63,8 @@ export function IncomeStep({ value, onChange, onNext, onPrevious }: IncomeStepPr
           {value.hasTuition ? (
             <Input
               type="number"
-              value={value.tuitionAmount}
-              onChange={(event) => onChange({ tuitionAmount: Number(event.target.value) })}
+              value={value.tuitionAmount ?? ""}
+              onChange={(event) => onChange({ tuitionAmount: parseNumberInput(event.target.value) })}
               placeholder="Estimated monthly tuition income"
             />
           ) : null}
@@ -74,8 +84,8 @@ export function IncomeStep({ value, onChange, onNext, onPrevious }: IncomeStepPr
           {value.hasFreelance ? (
             <Input
               type="number"
-              value={value.freelanceAmount}
-              onChange={(event) => onChange({ freelanceAmount: Number(event.target.value) })}
+              value={value.freelanceAmount ?? ""}
+              onChange={(event) => onChange({ freelanceAmount: parseNumberInput(event.target.value) })}
               placeholder="Estimated freelance income"
             />
           ) : null}

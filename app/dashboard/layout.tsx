@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import { BottomNav } from "@/components/dashboard/BottomNav";
 import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 import { ExpenseToast } from "@/components/dashboard/ExpenseToast";
@@ -5,10 +6,14 @@ import { DashboardEmergencyShell } from "@/components/features/DashboardEmergenc
 import { Navbar } from "@/components/dashboard/Navbar";
 import { NotificationBannerShell } from "@/components/notifications/NotificationBannerShell";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { AddExpenseModal } from "@/components/modals/AddExpenseModal";
 import { FAB } from "@/components/ui/FAB";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { createServerComponentClient } from "@/lib/supabase/server";
+
+const AddExpenseModal = dynamic(
+  () => import("@/components/modals/AddExpenseModal").then((module) => module.AddExpenseModal),
+  { ssr: false }
+);
 
 export default async function DashboardLayout({
   children
@@ -22,7 +27,7 @@ export default async function DashboardLayout({
         avatar_url: string | null;
       }
     | null = null;
-  let phone = "+880 1711-111111";
+  let phone = "you@example.com";
 
   try {
     const supabase = createServerComponentClient();
@@ -38,15 +43,13 @@ export default async function DashboardLayout({
         .maybeSingle();
 
       profile = result.data;
-      phone = result.data?.phone || user.phone || phone;
+      phone = result.data?.phone || user.email || phone;
     }
-  } catch {
-    // Fall back to a guest preview so the dashboard UI is always viewable during development.
-  }
+  } catch {}
 
   return (
     <LanguageProvider initialLanguage="bn">
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(255,216,125,0.65),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.18),transparent_28%),linear-gradient(180deg,#f9fcf7_0%,#fff8ef_100%)]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(255,216,125,0.65),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.18),transparent_28%),linear-gradient(180deg,#f9fcf7_0%,#fff8ef_100%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.08),transparent_26%),linear-gradient(180deg,#07111f_0%,#0f172a_100%)]">
         <Navbar
           userName={profile?.name || "PocketSense User"}
           userPhone={phone}

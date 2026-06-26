@@ -286,6 +286,23 @@ export async function GET(request: NextRequest) {
       { maxAge: 15, staleWhileRevalidate: 60 }
     );
   } catch (error) {
+    const supabase = createRouteHandlerClient();
+    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+
+    if (authResult.data.user) {
+      return NextResponse.json({
+        expenses: [],
+        meta: {
+          page: filters.page,
+          limit: filters.limit,
+          total: 0,
+          totalPages: 1,
+          hasMore: false,
+          totalSpent: 0
+        }
+      });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch expenses." },
       { status: 500 }

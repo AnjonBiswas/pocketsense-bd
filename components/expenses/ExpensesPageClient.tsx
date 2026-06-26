@@ -1,16 +1,30 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition
+} from "react";
 import { Download, RefreshCcw, Search, Trash2 } from "lucide-react";
-import { useExpenseFilters } from "@/lib/hooks/useExpenseFilters";
-import { groupExpensesForDisplay } from "@/lib/utils/expenses";
-import type { Expense } from "@/store/expenseStore";
+import { ExpenseFilters } from "@/components/expenses/ExpenseFilters";
+import { ExpenseListItem } from "@/components/expenses/ExpenseListItem";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ExpenseFilters } from "@/components/expenses/ExpenseFilters";
-import { ExpenseListItem } from "@/components/expenses/ExpenseListItem";
-import { EditExpenseModal } from "@/components/expenses/EditExpenseModal";
+import { useExpenseFilters } from "@/lib/hooks/useExpenseFilters";
+import { groupExpensesForDisplay } from "@/lib/utils/expenses";
+import type { Expense } from "@/store/expenseStore";
+
+const EditExpenseModal = dynamic(
+  () => import("@/components/expenses/EditExpenseModal").then((module) => module.EditExpenseModal),
+  {
+    ssr: false
+  }
+);
 
 type ExpensesPageClientProps = {
   initialExpenses: Expense[];
@@ -26,7 +40,7 @@ type ExpensesPageClientProps = {
 
 export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPageClientProps) {
   const { filters, draft, setDraft, setPreset, applyFilters, resetFilters, exportQuery } = useExpenseFilters(
-    initialMeta.limit || 10
+    initialMeta.limit || 20
   );
   const deferredSearch = useDeferredValue(filters.search);
   const [expenses, setExpenses] = useState(initialExpenses);
@@ -34,11 +48,17 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isRefreshing, startTransition] = useTransition();
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const categoriesKey = filters.categories.join(",");
 
-  const loadExpenses = () => {
+  const loadExpenses = (mode: "replace" | "append" = "replace", pageOverride?: number) => {
+    if (mode === "append") {
+      setIsLoadingMore(true);
+    }
+
     startTransition(async () => {
       const params = new URLSearchParams();
       if (filters.startDate) params.set("startDate", filters.startDate);
@@ -47,22 +67,37 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
       if (filters.minAmount) params.set("minAmount", filters.minAmount);
       if (filters.maxAmount) params.set("maxAmount", filters.maxAmount);
       if (deferredSearch) params.set("search", deferredSearch);
-      params.set("page", String(filters.page));
+      params.set("page", String(pageOverride ?? filters.page));
       params.set("limit", String(filters.limit));
 
       const response = await fetch(`/api/expenses?${params.toString()}`, { cache: "no-store" });
       const payload = await response.json().catch(() => null);
 
-      if (!response.ok || !payload) return;
+      if (!response.ok || !payload) {
+        setIsLoadingMore(false);
+        return;
+      }
 
-      setExpenses(payload.expenses || []);
+      setExpenses((current) => {
+        const nextItems = payload.expenses || [];
+        if (mode === "append") {
+          const seen = new Set(current.map((expense: Expense) => expense.id));
+          return [...current, ...nextItems.filter((expense: Expense) => !seen.has(expense.id))];
+        }
+        return nextItems;
+      });
       setMeta(payload.meta || initialMeta);
-      setSelectedIds([]);
+
+      if (mode === "replace") {
+        setSelectedIds([]);
+      }
+
+      setIsLoadingMore(false);
     });
   };
 
   useEffect(() => {
-    loadExpenses();
+    loadExpenses(filters.page > 1 ? "append" : "replace");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filters.startDate,
@@ -74,6 +109,31 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
     filters.limit,
     deferredSearch
   ]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+
+    if (!node || !meta.hasMore || isRefreshing || isLoadingMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+
+        if (!entry?.isIntersecting || isLoadingMore || isRefreshing || !meta.hasMore) {
+          return;
+        }
+
+        applyFilters({ page: meta.page + 1 });
+      },
+      { rootMargin: "240px 0px" }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [applyFilters, isLoadingMore, isRefreshing, meta.hasMore, meta.page]);
 
   const groupedExpenses = useMemo(() => groupExpensesForDisplay(expenses), [expenses]);
   const allSelected = expenses.length > 0 && selectedIds.length === expenses.length;
@@ -87,7 +147,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
 
     setExpenses((current) => current.filter((expense) => expense.id !== id));
     setSelectedIds((current) => current.filter((item) => item !== id));
-    loadExpenses();
+    loadExpenses("replace");
   };
 
   const handleBulkDelete = async () => {
@@ -101,7 +161,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
 
     setExpenses((current) => current.filter((expense) => !selectedIds.includes(expense.id)));
     setSelectedIds([]);
-    loadExpenses();
+    loadExpenses("replace");
   };
 
   return (
@@ -117,7 +177,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
       }}
       onTouchEnd={() => {
         if (pullDistance > 60) {
-          loadExpenses();
+          loadExpenses("replace");
         }
         setTouchStartY(null);
         setPullDistance(0);
@@ -138,7 +198,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle className="text-2xl">Expense list</CardTitle>
-              <CardDescription>সব খরচ, filter, edit, export, আর bulk cleanup এক জায়গায়।</CardDescription>
+              <CardDescription>All your spending, filters, exports, and quick cleanup in one place.</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <ExpenseFilters
@@ -148,7 +208,13 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                 onApply={() => applyFilters()}
                 onReset={resetFilters}
               />
-              <Button type="button" variant="outline" className="rounded-full" onClick={loadExpenses} disabled={isRefreshing}>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => loadExpenses("replace")}
+                disabled={isRefreshing}
+              >
                 <RefreshCcw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
@@ -177,7 +243,12 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                   className="pl-11"
                 />
               </div>
-              <Button type="button" variant="outline" className="rounded-full" onClick={() => applyFilters({ search: draft.search })}>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => applyFilters({ search: draft.search })}
+              >
                 Search
               </Button>
             </div>
@@ -228,7 +299,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               </div>
               <h3 className="text-xl font-semibold text-slate-900">No expenses yet</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                নতুন খরচ যোগ করলে এখানে date অনুযায়ী grouped list দেখা যাবে।
+                Add your first expense and PocketSense will group everything here by time.
               </p>
             </div>
           ) : null}
@@ -270,22 +341,17 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                 type="button"
                 variant="outline"
                 className="rounded-full"
-                disabled={filters.page <= 1}
-                onClick={() => applyFilters({ page: filters.page - 1 })}
+                disabled={!meta.hasMore || isLoadingMore}
+                onClick={() => {
+                  applyFilters({ page: meta.page + 1 });
+                }}
               >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full"
-                disabled={!meta.hasMore}
-                onClick={() => applyFilters({ page: filters.page + 1 })}
-              >
-                Next
+                {isLoadingMore ? "Loading..." : "Load more"}
               </Button>
             </div>
           </div>
+
+          <div ref={loadMoreRef} className="h-4 w-full" />
         </CardContent>
       </Card>
 
@@ -300,7 +366,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
             current.map((expense) => (expense.id === updatedExpense.id ? updatedExpense : expense))
           );
           setEditingExpense(null);
-          loadExpenses();
+          loadExpenses("replace");
         }}
       />
     </section>

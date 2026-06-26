@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import { LoaderCircle, Sparkles, Wand2 } from "lucide-react";
 import { BudgetLock } from "@/components/features/BudgetLock";
+import { ExpenseTemplates } from "@/components/features/ExpenseTemplates";
+import { ReceiptScanner } from "@/components/features/ReceiptScanner";
+import { ThemeIllustration } from "@/components/features/ThemeIllustration";
 import { TreatCalculator } from "@/components/features/TreatCalculator";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +19,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useExpenses } from "@/lib/hooks/useExpenses";
+import { suggestCategoryFromNote } from "@/lib/ml/categorizer";
 import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
+import type { ExpenseTemplate } from "@/lib/utils/expenseTemplates";
 import { useExpenseStore } from "@/store/expenseStore";
 
 type BudgetSnapshot = {
@@ -61,6 +66,12 @@ export function AddExpenseModal() {
   const [unlockError, setUnlockError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isEmergencyUnlocked, setIsEmergencyUnlocked] = useState(false);
+  const [categoryTouched, setCategoryTouched] = useState(false);
+  const [categorySuggestion, setCategorySuggestion] = useState<{
+    category: string | null;
+    confidence: number;
+  } | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   const numericAmount = useMemo(() => Number(amount), [amount]);
   const isTreatCategory = TREAT_CATEGORIES.has(category);
@@ -84,7 +95,22 @@ export function AddExpenseModal() {
     setUnlockPin("");
     setUnlockError("");
     setIsEmergencyUnlocked(false);
+    setCategoryTouched(Boolean(draftExpense.category));
+    setCategorySuggestion(null);
+    setReceiptUrl(null);
   }, [draftExpense, isOpen]);
+
+  useEffect(() => {
+    const suggestion = suggestCategoryFromNote(note);
+    setCategorySuggestion({
+      category: suggestion.category,
+      confidence: suggestion.confidence
+    });
+
+    if (!categoryTouched && suggestion.category && suggestion.confidence >= 0.34) {
+      setCategory(suggestion.category);
+    }
+  }, [categoryTouched, note]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -160,7 +186,7 @@ export function AddExpenseModal() {
       await addExpense({
         amount: safeAmount,
         category,
-        note,
+        note: [note.trim(), receiptUrl ? "Receipt scanned" : ""].filter(Boolean).join(" • "),
         date,
         overrideEmergency,
         unlockPin: isEmergencyUnlocked ? unlockPin : undefined
@@ -216,6 +242,13 @@ export function AddExpenseModal() {
     }
   }
 
+  function applyTemplate(template: ExpenseTemplate) {
+    setAmount(String(template.amount));
+    setCategory(template.category);
+    setNote(template.note);
+    setCategoryTouched(true);
+  }
+
   return (
     <Dialog
       open={isOpen}
@@ -232,6 +265,42 @@ export function AddExpenseModal() {
         </DialogHeader>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
+          <div className="rounded-[28px] border border-white/60 bg-white/80 p-4 shadow-sm">
+            <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="space-y-3">
+                <ReceiptScanner
+                  onExtract={({ amount: scannedAmount, date: scannedDate, merchant, note: scannedNote, category: scannedCategory, receiptUrl: scannedReceiptUrl }) => {
+                    if (scannedAmount) setAmount(String(scannedAmount));
+                    if (scannedDate) setDate(scannedDate);
+                    if (merchant || scannedNote) setNote([merchant, scannedNote].filter(Boolean).join(" • "));
+                    if (scannedCategory) {
+                      setCategory(scannedCategory);
+                      setCategoryTouched(true);
+                    }
+                    if (scannedReceiptUrl) setReceiptUrl(scannedReceiptUrl);
+                  }}
+                />
+              </div>
+              <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+                <ThemeIllustration
+                  lightSrc="/illustrations/receipt-light.svg"
+                  darkSrc="/illustrations/receipt-dark.svg"
+                  alt="Receipt helper"
+                  className="mx-auto h-32 w-full object-contain"
+                />
+                <p className="mt-3 text-sm font-medium text-slate-900 dark:text-slate-50">Smart expense entry</p>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                  Scan receipts or upload a sheet. We will prefill amount, date, merchant, and suggest the best category.
+                </p>
+                {receiptUrl ? (
+                  <a href={receiptUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-xs font-medium text-primary">
+                    View uploaded receipt
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="expense-amount">Amount (BDT)</Label>
             <Input
@@ -260,7 +329,10 @@ export function AddExpenseModal() {
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-white/60 bg-secondary/40 hover:bg-secondary/70"
                     }`}
-                    onClick={() => setCategory(key)}
+                    onClick={() => {
+                      setCategory(key);
+                      setCategoryTouched(true);
+                    }}
                   >
                     <div className="text-xl">{value.icon}</div>
                     <p className="mt-2 text-sm font-semibold">{value.bn}</p>
@@ -268,6 +340,19 @@ export function AddExpenseModal() {
                 );
               })}
             </div>
+            {categorySuggestion?.category && categorySuggestion.category !== category ? (
+              <button
+                type="button"
+                className="inline-flex items-center rounded-full bg-sky-50 px-3 py-2 text-xs font-medium text-sky-900"
+                onClick={() => {
+                  setCategory(categorySuggestion.category || "other");
+                  setCategoryTouched(true);
+                }}
+              >
+                <Wand2 className="mr-2 h-3.5 w-3.5" />
+                Suggested: {getCategoryMeta(categorySuggestion.category).en}
+              </button>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -279,6 +364,15 @@ export function AddExpenseModal() {
               placeholder={`${getCategoryMeta(category).bn} সম্পর্কে কিছু লিখতে চাইলে লিখুন`}
             />
           </div>
+
+          <ExpenseTemplates
+            current={{
+              amount: numericAmount || 0,
+              category,
+              note
+            }}
+            onSelect={applyTemplate}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="expense-date">Date</Label>

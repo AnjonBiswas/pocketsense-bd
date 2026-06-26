@@ -52,6 +52,24 @@ async function buildEmptyAuthenticatedResponse(
   daysInMonth: number,
   daysRemaining: number
 ) {
+  const sos = await getSOSState(supabase, userId).catch(() => ({
+    shouldActivate: false,
+    severity: "warning" as const,
+    isActive: false,
+    remainingBudget: 0,
+    daysRemaining,
+    dailyBudget: 0,
+    activatedTips: [],
+    projectedSavings: 0,
+    canSurvive: true,
+    survivalTarget: 100,
+    hasLockedFunds: false,
+    lockedAmount: 0,
+    hasPin: false,
+    complianceScore: 0,
+    luxuryWarning: null
+  }));
+
   return applyCacheHeaders(
     NextResponse.json({
       ...emptyUserStats,
@@ -62,7 +80,7 @@ async function buildEmptyAuthenticatedResponse(
       remainingBudget: 0,
       topCategories: [],
       alerts: [],
-      sos: await getSOSState(supabase, userId)
+      sos
     }),
     { maxAge: 20, staleWhileRevalidate: 120 }
   );

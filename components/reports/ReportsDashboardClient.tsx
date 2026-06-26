@@ -66,6 +66,20 @@ type ReportsPayload = {
     title: string;
     message: string;
   }>;
+  forecast: Array<{
+    category: string;
+    label: string;
+    predictedAmount: number;
+    trend: "up" | "down" | "steady";
+  }>;
+  studentComparison: Array<{
+    category: string;
+    label: string;
+    current: number;
+    average: number;
+    deltaPercent: number;
+    insight: string;
+  }>;
 };
 
 function getPresetRange(preset: "thisMonth" | "lastMonth" | "last3Months") {
@@ -102,7 +116,9 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
 
   const loadReports = (startDate: string, endDate: string, preset = range.preset) => {
     startTransition(async () => {
-      const response = await fetch(`/api/reports?startDate=${startDate}&endDate=${endDate}`, { cache: "no-store" });
+      const response = await fetch(`/api/reports?startDate=${startDate}&endDate=${endDate}`, {
+        cache: "no-store"
+      });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload) return;
       setData(payload);
@@ -112,10 +128,26 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
 
   const metricCards = useMemo(
     () => [
-      { label: "Total Income", value: `৳${data.metrics.totalIncome.toFixed(0)}`, tone: "bg-emerald-50 text-emerald-900" },
-      { label: "Total Expenses", value: `৳${data.metrics.totalExpenses.toFixed(0)}`, tone: "bg-rose-50 text-rose-900" },
-      { label: "Savings", value: `৳${data.metrics.savings.toFixed(0)}`, tone: "bg-sky-50 text-sky-900" },
-      { label: "Savings Rate", value: `${data.metrics.savingsRate.toFixed(1)}%`, tone: "bg-amber-50 text-amber-900" }
+      {
+        label: "Total Income",
+        value: `৳${data.metrics.totalIncome.toFixed(0)}`,
+        tone: "bg-emerald-50 text-emerald-900 dark:bg-emerald-500/12 dark:text-emerald-100 dark:border-emerald-500/20"
+      },
+      {
+        label: "Total Expenses",
+        value: `৳${data.metrics.totalExpenses.toFixed(0)}`,
+        tone: "bg-rose-50 text-rose-900 dark:bg-rose-500/12 dark:text-rose-100 dark:border-rose-500/20"
+      },
+      {
+        label: "Savings",
+        value: `৳${data.metrics.savings.toFixed(0)}`,
+        tone: "bg-sky-50 text-sky-900 dark:bg-sky-500/12 dark:text-sky-100 dark:border-sky-500/20"
+      },
+      {
+        label: "Savings Rate",
+        value: `${data.metrics.savingsRate.toFixed(1)}%`,
+        tone: "bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-100 dark:border-amber-400/20"
+      }
     ],
     [data]
   );
@@ -125,8 +157,12 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary">Reports</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-50">Financial story dashboard</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Professional charts, trends, and insights for your student budget.</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-50">
+            Financial story dashboard
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Professional charts, trends, and insights for your student budget.
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -149,7 +185,12 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
             endDate={range.endDate}
             onApply={(startDate, endDate) => loadReports(startDate, endDate, "custom")}
           />
-          <Button type="button" variant="outline" className="rounded-full" onClick={() => loadReports(range.startDate, range.endDate)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full"
+            onClick={() => loadReports(range.startDate, range.endDate)}
+          >
             <RefreshCcw className={`mr-2 h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -183,6 +224,69 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
         <IncomeVsExpenseChart data={data.monthlyComparison} />
       </div>
 
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Next month forecast</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
+                  Predicted category spend
+                </h3>
+              </div>
+            </div>
+            <div className="mt-5 space-y-3">
+              {data.forecast.slice(0, 5).map((item) => (
+                <div
+                  key={item.category}
+                  className="flex items-center justify-between rounded-2xl bg-secondary/45 px-4 py-3 dark:bg-slate-900/75"
+                >
+                  <div>
+                    <p className="font-medium text-slate-900 dark:text-slate-50">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Trend: {item.trend === "up" ? "rising" : item.trend === "down" ? "cooling down" : "steady"}
+                    </p>
+                  </div>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                    ৳{item.predictedAmount.toFixed(0)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+          <CardContent className="p-5">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Budget comparison</p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
+              Compared with average students
+            </h3>
+            <div className="mt-5 space-y-3">
+              {data.studentComparison.map((item) => (
+                <div key={item.category} className="rounded-2xl bg-secondary/45 px-4 py-4 dark:bg-slate-900/75">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-slate-900 dark:text-slate-50">{item.label}</p>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        item.deltaPercent <= 0
+                          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-100"
+                          : "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-100"
+                      }`}
+                    >
+                      {item.deltaPercent <= 0
+                        ? `${Math.abs(item.deltaPercent).toFixed(0)}% lower`
+                        : `${item.deltaPercent.toFixed(0)}% higher`}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{item.insight}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <SpendingHeatmap data={data.heatmap} startDate={data.startDate} endDate={data.endDate} />
     </section>
   );
@@ -201,7 +305,7 @@ function InputDatePair({
   const [localEndDate, setLocalEndDate] = useState(endDate);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-950/90">
       <input
         type="date"
         value={localStartDate}

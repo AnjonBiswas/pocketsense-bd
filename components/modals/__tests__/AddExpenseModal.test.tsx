@@ -81,7 +81,7 @@ describe("AddExpenseModal", () => {
       expect(addExpenseMock).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 250,
-          category: "food",
+          category: "cafe",
           note: "Tea and snacks",
           date: "2026-06-26"
         })

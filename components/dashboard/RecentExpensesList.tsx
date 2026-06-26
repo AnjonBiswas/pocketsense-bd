@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,11 @@ export function RecentExpensesList() {
   const expenses = useExpenseStore((state) => state.expenses);
   const activeCategory = useExpenseStore((state) => state.filters.category);
   const setCategoryFilter = useExpenseStore((state) => state.setCategoryFilter);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const visibleExpenses = useMemo(
     () =>
@@ -29,9 +34,7 @@ export function RecentExpensesList() {
         <div>
           <CardTitle className="text-lg">Recent expenses</CardTitle>
           <CardDescription>
-            {activeCategory
-              ? `${getCategoryMeta(activeCategory).bn} ক্যাটাগরির সর্বশেষ ৫টি লেনদেন`
-              : "সর্বশেষ ৫টি লেনদেন"}
+            {activeCategory ? `${getCategoryMeta(activeCategory).bn} ক্যাটাগরির সর্বশেষ ৫টি লেনদেন` : "সর্বশেষ ৫টি লেনদেন"}
           </CardDescription>
         </div>
         <Button
@@ -47,7 +50,7 @@ export function RecentExpensesList() {
       <CardContent className="space-y-3">
         {visibleExpenses.length === 0 ? (
           <div className="rounded-2xl bg-secondary/45 px-4 py-6 text-sm text-muted-foreground dark:bg-slate-900/75">
-            এখনো কোনো খরচ যোগ করা হয়নি।
+            এখনও কোনো খরচ যোগ করা হয়নি।
           </div>
         ) : null}
 
@@ -69,7 +72,7 @@ export function RecentExpensesList() {
                 <div>
                   <p className="font-medium">{expense.note || meta.bn}</p>
                   <p className="text-xs text-muted-foreground">
-                    {meta.bn} · {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
+                    {meta.bn} · {isHydrated ? formatDistanceToNow(new Date(expense.created_at), { addSuffix: true }) : expense.date}
                     {expense.optimistic ? " · syncing..." : ""}
                   </p>
                 </div>

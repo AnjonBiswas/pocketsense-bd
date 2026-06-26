@@ -40,8 +40,7 @@ export async function POST(request: NextRequest) {
     currentDay
   });
   const remainingBudget = Math.max(
-    Number(body.totalIncome || 0) +
-      Number(body.recurringIncome || 0) -
+    Number(body.totalIncome || 0) -
       Number(body.totalExpenses || 0) -
       Number(body.savingsGoal || 0) -
       Number(body.emergencyReserve || 0),
@@ -82,4 +81,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(response);
 }
-

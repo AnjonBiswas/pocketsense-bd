@@ -132,6 +132,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      expense_templates: {
+        Row: {
+          amount: number;
+          category: string;
+          created_at: string;
+          id: string;
+          note: string | null;
+          title: string;
+          user_id: string;
+        };
+        Insert: {
+          amount?: number;
+          category: string;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          title: string;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          category?: string;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       incomes: {
         Row: {
           amount: number;
@@ -351,6 +381,42 @@ export type Database = {
           avatar_url?: string | null;
           created_at?: string;
           xp?: number | null;
+        };
+        Relationships: [];
+      };
+      referrals: {
+        Row: {
+          completed_at: string | null;
+          created_at: string;
+          id: string;
+          referral_code: string;
+          referred_phone: string | null;
+          referred_user_id: string | null;
+          referrer_user_id: string;
+          reward_xp: number;
+          status: "pending" | "completed" | "cancelled";
+        };
+        Insert: {
+          completed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          referral_code: string;
+          referred_phone?: string | null;
+          referred_user_id?: string | null;
+          referrer_user_id: string;
+          reward_xp?: number;
+          status?: "pending" | "completed" | "cancelled";
+        };
+        Update: {
+          completed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          referral_code?: string;
+          referred_phone?: string | null;
+          referred_user_id?: string | null;
+          referrer_user_id?: string;
+          reward_xp?: number;
+          status?: "pending" | "completed" | "cancelled";
         };
         Relationships: [];
       };

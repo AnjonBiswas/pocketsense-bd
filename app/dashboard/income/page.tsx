@@ -64,7 +64,7 @@ async function getIncomes(): Promise<IncomeRecord[]> {
       .order("date", { ascending: false });
 
     if (error) {
-      return buildFallbackIncomes();
+      return [];
     }
 
     return (data || []).map((income) => ({
@@ -72,7 +72,16 @@ async function getIncomes(): Promise<IncomeRecord[]> {
       amount: Number(income.amount)
     }));
   } catch {
-    return buildFallbackIncomes();
+    try {
+      const supabase = createServerComponentClient();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+
+      return user ? [] : buildFallbackIncomes();
+    } catch {
+      return [];
+    }
   }
 }
 

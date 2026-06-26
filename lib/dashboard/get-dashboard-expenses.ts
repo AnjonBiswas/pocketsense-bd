@@ -7,27 +7,35 @@ export const getDashboardExpenses = cache(async (): Promise<Expense[]> => {
   const headerStore = headers();
   const host = headerStore.get("host");
   const forwardedProto = headerStore.get("x-forwarded-proto");
+  const cookie = headerStore.get("cookie") || "";
   const protocol = forwardedProto || (process.env.NODE_ENV === "development" ? "http" : "https");
 
   if (!host) {
-    throw new Error("Unable to resolve dashboard expenses host.");
+    return [];
   }
 
   const today = new Date();
   const startDate = startOfMonth(today).toISOString().slice(0, 10);
   const endDate = endOfMonth(today).toISOString().slice(0, 10);
 
-  const response = await fetch(
-    `${protocol}://${host}/api/expenses?startDate=${startDate}&endDate=${endDate}`,
-    {
-      cache: "no-store"
+  try {
+    const response = await fetch(
+      `${protocol}://${host}/api/expenses?startDate=${startDate}&endDate=${endDate}`,
+      {
+        cache: "no-store",
+        headers: {
+          cookie
+        }
+      }
+    );
+
+    if (!response.ok) {
+      return [];
     }
-  );
 
-  if (!response.ok) {
-    throw new Error("Failed to load dashboard expenses.");
+    const result = await response.json();
+    return result.expenses || [];
+  } catch {
+    return [];
   }
-
-  const result = await response.json();
-  return result.expenses || [];
 });

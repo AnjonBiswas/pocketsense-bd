@@ -1,36 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isRunningAsPWA } from "@/lib/utils/pwa";
 
-const DISMISS_KEY = "pocketsense-install-dismissed-at";
-const SEVEN_DAYS = 1000 * 60 * 60 * 24 * 7;
+const TRIGGER_COOKIE = "pocketsense_install_prompt=1";
 
 export function InstallPrompt() {
+  const pathname = usePathname();
   const [installEvent, setInstallEvent] = useState<WindowEventMap["beforeinstallprompt"] | null>(null);
   const [visible, setVisible] = useState(false);
+  const [shouldShow, setShouldShow] = useState(false);
 
   useEffect(() => {
     if (isRunningAsPWA()) {
       return;
     }
 
-    const dismissedAt = Number(window.localStorage.getItem(DISMISS_KEY) || "0");
-    if (dismissedAt && Date.now() - dismissedAt < SEVEN_DAYS) {
-      return;
-    }
-
     const handleInstall = (event: WindowEventMap["beforeinstallprompt"]) => {
       event.preventDefault?.();
       setInstallEvent(event);
-      setVisible(true);
     };
 
+    const refreshEligibility = () => {
+      setShouldShow(document.cookie.includes(TRIGGER_COOKIE));
+    };
+
+    refreshEligibility();
     window.addEventListener("beforeinstallprompt", handleInstall);
-    return () => window.removeEventListener("beforeinstallprompt", handleInstall);
+    window.addEventListener("pocketsense-auth-success", refreshEligibility);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleInstall);
+      window.removeEventListener("pocketsense-auth-success", refreshEligibility);
+    };
   }, []);
+
+  useEffect(() => {
+    if (isRunningAsPWA() || !shouldShow || !pathname.startsWith("/dashboard") || !installEvent) {
+      return;
+    }
+
+    setVisible(true);
+    document.cookie = "pocketsense_install_prompt=; path=/; max-age=0; samesite=lax";
+  }, [installEvent, pathname, shouldShow]);
 
   if (!visible || !installEvent) {
     return null;
@@ -49,7 +64,6 @@ export function InstallPrompt() {
           type="button"
           className="tap-safe rounded-full p-2 text-muted-foreground transition hover:bg-secondary"
           onClick={() => {
-            window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
             setVisible(false);
           }}
         >
@@ -76,7 +90,6 @@ export function InstallPrompt() {
           variant="outline"
           className="rounded-full"
           onClick={() => {
-            window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
             setVisible(false);
           }}
         >

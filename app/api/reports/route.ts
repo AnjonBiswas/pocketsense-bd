@@ -58,6 +58,10 @@ type ReportResponse = {
   }>;
 };
 
+function buildEmptyReportResponse(startDate: string, endDate: string): ReportResponse {
+  return buildResponse(startDate, endDate, [], [], []);
+}
+
 function buildFallbackIncomes(startDate: string, endDate: string): IncomeRecord[] {
   const start = parseISO(startDate);
   const month = format(start, "yyyy-MM");
@@ -260,7 +264,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (expenseError || incomeError) {
-      return NextResponse.json({ error: expenseError?.message || incomeError?.message || "Failed to fetch reports." }, { status: 400 });
+      return NextResponse.json(buildEmptyReportResponse(startDate, endDate));
     }
 
     const allExpenses = (expenseRows || []).map((expense) => normalizeExpense(expense));
@@ -275,6 +279,16 @@ export async function GET(request: NextRequest) {
       { maxAge: 30, staleWhileRevalidate: 180 }
     );
   } catch (error) {
+    const supabase = createRouteHandlerClient();
+    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+
+    if (authResult.data.user) {
+      return applyCacheHeaders(NextResponse.json(buildEmptyReportResponse(startDate, endDate)), {
+        maxAge: 30,
+        staleWhileRevalidate: 180
+      });
+    }
+
     const incomes = buildFallbackIncomes(startDate, endDate);
     const expenses = FALLBACK_EXPENSES.filter((expense) => expense.date >= startDate && expense.date <= endDate);
     return applyCacheHeaders(

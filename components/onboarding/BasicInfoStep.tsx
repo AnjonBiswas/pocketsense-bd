@@ -46,8 +46,13 @@ export function BasicInfoStep({ value, onChange, onNext, onPrevious }: BasicInfo
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="onboarding-phone">Phone</Label>
-          <Input id="onboarding-phone" value={value.phone} readOnly />
+          <Label htmlFor="onboarding-phone">Phone (optional)</Label>
+          <Input
+            id="onboarding-phone"
+            value={value.phone}
+            onChange={(event) => onChange({ phone: event.target.value })}
+            placeholder="01XXXXXXXXX"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="onboarding-university">University</Label>

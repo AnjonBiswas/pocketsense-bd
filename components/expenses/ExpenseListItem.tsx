@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Pencil, Trash2 } from "lucide-react";
 import type { Expense } from "@/store/expenseStore";
@@ -14,7 +14,7 @@ type ExpenseListItemProps = {
   onEdit: () => void;
 };
 
-export function ExpenseListItem({
+function ExpenseListItemComponent({
   expense,
   selected,
   onSelect,
@@ -108,3 +108,5 @@ export function ExpenseListItem({
     </div>
   );
 }
+
+export const ExpenseListItem = memo(ExpenseListItemComponent);

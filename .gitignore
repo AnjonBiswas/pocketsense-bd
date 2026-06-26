@@ -26,3 +26,7 @@ Thumbs.db
 coverage/
 *.tmp
 *.temp
+/.tmp-edge-profile
+/.tmp-lh
+*.log
+*.json

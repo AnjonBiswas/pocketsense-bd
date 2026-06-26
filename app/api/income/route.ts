@@ -149,6 +149,15 @@ export async function GET(request: NextRequest) {
     const incomes = await fetchUserIncomes(user.id, request, supabase);
     return NextResponse.json(buildIncomeResponse(incomes));
   } catch (error) {
+    const supabase = createRouteHandlerClient();
+    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+
+    if (authResult.data.user) {
+      return NextResponse.json(
+        buildIncomeResponse([])
+      );
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch incomes." },
       { status: 500 }

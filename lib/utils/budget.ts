@@ -66,8 +66,7 @@ export function calculateDailyBudget(
   const params = paramsOrTotalIncome;
   const safeDaysRemaining = getDaysRemaining(params.daysInMonth, params.currentDay);
   const availablePool =
-    params.totalIncome +
-    params.recurringIncome -
+    params.totalIncome -
     params.totalExpenses -
     params.savingsGoal -
     params.emergencyReserve;

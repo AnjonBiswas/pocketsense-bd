@@ -47,23 +47,68 @@ export type DashboardStats = {
   }>;
 };
 
+const EMPTY_DASHBOARD_STATS: DashboardStats = {
+  totalIncome: 0,
+  totalExpenses: 0,
+  fixedExpenses: 0,
+  savingsGoal: 0,
+  monthlyLimit: 0,
+  emergencyReserve: 0,
+  streak: 0,
+  monthlyRank: "Getting Started",
+  daysElapsed: 1,
+  daysInMonth: 30,
+  daysRemaining: 29,
+  spentToday: 0,
+  entriesToday: 0,
+  dailyBudget: 0,
+  remainingBudget: 0,
+  topCategories: [],
+  sos: {
+    shouldActivate: false,
+    severity: "warning",
+    isActive: false,
+    remainingBudget: 0,
+    daysRemaining: 29,
+    dailyBudget: 0,
+    activatedTips: [],
+    projectedSavings: 0,
+    canSurvive: true,
+    survivalTarget: 100,
+    hasLockedFunds: false,
+    lockedAmount: 0,
+    hasPin: false,
+    complianceScore: 0,
+    luxuryWarning: null
+  },
+  alerts: []
+};
+
 export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
   const headerStore = headers();
   const host = headerStore.get("host");
   const forwardedProto = headerStore.get("x-forwarded-proto");
+  const cookie = headerStore.get("cookie") || "";
   const protocol = forwardedProto || (process.env.NODE_ENV === "development" ? "http" : "https");
 
   if (!host) {
-    throw new Error("Unable to resolve dashboard stats host.");
+    return EMPTY_DASHBOARD_STATS;
   }
 
-  const response = await fetch(`${protocol}://${host}/api/dashboard/stats`, {
-    cache: "no-store"
-  });
+  try {
+    const response = await fetch(`${protocol}://${host}/api/dashboard/stats`, {
+      cache: "no-store",
+      headers: {
+        cookie
+      }
+    });
 
-  if (!response.ok) {
-    throw new Error("Failed to load dashboard stats.");
+    if (!response.ok) {
+      return EMPTY_DASHBOARD_STATS;
+    }
+
+    return response.json();
+  } catch {
+    return EMPTY_DASHBOARD_STATS;
   }
-
-  return response.json();
 });
