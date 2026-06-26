@@ -100,7 +100,7 @@ export function CreateSquadModal({ onCreated }: CreateSquadModalProps) {
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create squad</DialogTitle>
-          <DialogDescription>Start a shared expense group with your friends using phone search.</DialogDescription>
+          <DialogDescription>Start a shared expense group with your friends using contact search.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
@@ -115,7 +115,7 @@ export function CreateSquadModal({ onCreated }: CreateSquadModalProps) {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by phone or name"
+                placeholder="Search by name or contact"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -189,4 +189,3 @@ export function CreateSquadModal({ onCreated }: CreateSquadModalProps) {
     </Dialog>
   );
 }
-

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import {
   BellRing,
   CalendarClock,
@@ -61,7 +62,7 @@ const typeConfig = {
   }
 } as const;
 
-export function NotificationItem({ notification, onOpen }: NotificationItemProps) {
+function NotificationItemComponent({ notification, onOpen }: NotificationItemProps) {
   const config = typeConfig[notification.type] || typeConfig.info;
   const Icon = config.icon;
 
@@ -94,3 +95,5 @@ export function NotificationItem({ notification, onOpen }: NotificationItemProps
     </div>
   );
 }
+
+export const NotificationItem = memo(NotificationItemComponent);
