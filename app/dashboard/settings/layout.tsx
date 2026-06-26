@@ -29,7 +29,7 @@ export default function SettingsLayout({
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-full border border-white/60 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-secondary/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="rounded-full border border-white/60 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-secondary/70 dark:border-slate-700 dark:bg-slate-950/90 dark:text-slate-100 dark:hover:bg-slate-800"
           >
             {item.label}
           </Link>

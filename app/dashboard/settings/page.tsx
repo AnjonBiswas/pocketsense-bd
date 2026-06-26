@@ -6,7 +6,7 @@ const sections = [
   {
     href: "/dashboard/settings/profile",
     title: "Profile",
-    description: "Update your avatar, name, university, and phone details.",
+    description: "Update your avatar, name, university, and contact details.",
     icon: UserRound
   },
   {
@@ -30,7 +30,7 @@ const sections = [
   {
     href: "/dashboard/settings/account",
     title: "Account",
-    description: "Phone change, data export, delete account, and legal links.",
+    description: "Email, password, data export, delete account, and legal links.",
     icon: ShieldCheck
   },
   {
@@ -49,7 +49,7 @@ export default function SettingsPage() {
 
         return (
           <Link key={section.title} href={section.href}>
-            <Card className="h-full border-white/60 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-950/90">
+            <Card className="h-full border-white/60 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-950/90 dark:hover:bg-slate-900">
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
                   <div>

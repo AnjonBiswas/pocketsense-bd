@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 
 type SettingsPayload = {
   profile: {
+    email: string | null;
     phone: string | null;
     name: string | null;
     university: string | null;
@@ -22,6 +23,7 @@ const UNIVERSITIES = ["DU", "BUET", "NSU", "BRAC", "IUB", "JNU", "SUST", "RUET",
 export function ProfileSettingsClient() {
   const [data, setData] = useState<SettingsPayload | null>(null);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [university, setUniversity] = useState("");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -33,6 +35,7 @@ export function ProfileSettingsClient() {
         if (payload?.error) return;
         setData(payload);
         setName(payload.profile.name || "");
+        setPhone(payload.profile.phone || "");
         setUniversity(payload.profile.university || "");
       })
       .catch(() => null);
@@ -57,6 +60,7 @@ export function ProfileSettingsClient() {
         body: JSON.stringify({
           section: "profile",
           name,
+          phone,
           university
         })
       });
@@ -91,6 +95,10 @@ export function ProfileSettingsClient() {
             <Input id="settings-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="settings-phone">Phone (optional)</Label>
+            <Input id="settings-phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="01XXXXXXXXX" />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="settings-university">University</Label>
             <select
               id="settings-university"
@@ -109,8 +117,8 @@ export function ProfileSettingsClient() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="settings-phone">Phone number</Label>
-          <Input id="settings-phone" value={data.profile.phone || ""} readOnly />
+          <Label htmlFor="settings-email">Account email</Label>
+          <Input id="settings-email" value={data.profile.email || ""} readOnly />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

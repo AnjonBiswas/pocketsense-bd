@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { updateEmail, updatePassword } from "@/lib/auth/actions";
 import { DeleteAccountModal } from "@/components/settings/DeleteAccountModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,51 +12,68 @@ import { Label } from "@/components/ui/label";
 
 export function AccountSettingsClient() {
   const router = useRouter();
-  const supabase = createClient();
-  const [phone, setPhone] = useState("+880");
-  const [otp, setOtp] = useState("");
-  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [email, setEmail] = useState("");
+  const [nextEmail, setNextEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  async function requestPhoneChange() {
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload) => {
+        const currentEmail = payload?.profile?.email || "";
+        setEmail(currentEmail);
+        setNextEmail(currentEmail);
+      })
+      .catch(() => null);
+  }, []);
+
+  async function saveEmail() {
     setIsSending(true);
     setMessage("");
 
     try {
-      const { error } = await supabase.auth.updateUser({ phone });
-      if (error) {
-        throw error;
+      const result = await updateEmail(nextEmail);
+      if (!result.success) {
+        throw new Error(result.error || "Could not update email.");
       }
-      setIsOtpSent(true);
-      setMessage("OTP sent to your new phone number.");
+
+      setMessage("Email update requested. Check both old and new inboxes if Supabase email confirmation is enabled.");
+      setEmail(nextEmail);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not send OTP.");
+      setMessage(error instanceof Error ? error.message : "Could not update email.");
     } finally {
       setIsSending(false);
     }
   }
 
-  async function verifyPhoneChange() {
+  async function savePassword() {
     setIsSending(true);
     setMessage("");
 
     try {
-      const payload: Parameters<typeof supabase.auth.verifyOtp>[0] = {
-        phone,
-        token: otp,
-        type: "phone_change"
-      };
-      const { error } = await supabase.auth.verifyOtp(payload);
-      if (error) {
-        throw error;
+      if (password.length < 6) {
+        throw new Error("Password should be at least 6 characters.");
       }
-      setMessage("Phone number updated successfully.");
-      setIsOtpSent(false);
-      setOtp("");
+
+      if (password !== confirmPassword) {
+        throw new Error("Passwords do not match.");
+      }
+
+      const result = await updatePassword(password);
+
+      if (!result.success) {
+        throw new Error(result.error || "Could not update password.");
+      }
+
+      setPassword("");
+      setConfirmPassword("");
+      setMessage("Password updated successfully.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not verify OTP.");
+      setMessage(error instanceof Error ? error.message : "Could not update password.");
     } finally {
       setIsSending(false);
     }
@@ -83,29 +100,35 @@ export function AccountSettingsClient() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3 rounded-[28px] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/70">
-            <p className="font-semibold text-slate-900 dark:text-slate-50">Change phone number</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-50">Account email</p>
             <div className="grid gap-3 md:grid-cols-[1fr_auto]">
               <div className="space-y-2">
-                <Label htmlFor="new-phone">New phone</Label>
-                <Input id="new-phone" value={phone} onChange={(event) => setPhone(event.target.value)} />
+                <Label htmlFor="account-email">Email</Label>
+                <Input id="account-email" type="email" value={nextEmail} onChange={(event) => setNextEmail(event.target.value)} />
               </div>
-              <Button type="button" className="self-end rounded-full" disabled={isSending} onClick={requestPhoneChange}>
+              <Button type="button" className="self-end rounded-full" disabled={isSending} onClick={saveEmail}>
                 {isSending ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Send OTP
+                Update email
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">Current login email: {email || "Not available"}</p>
+          </div>
 
-            {isOtpSent ? (
-              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                <div className="space-y-2">
-                  <Label htmlFor="phone-otp">Verify OTP</Label>
-                  <Input id="phone-otp" value={otp} onChange={(event) => setOtp(event.target.value)} placeholder="Enter OTP" />
-                </div>
-                <Button type="button" variant="outline" className="self-end rounded-full" disabled={isSending} onClick={verifyPhoneChange}>
-                  Verify
-                </Button>
+          <div className="space-y-3 rounded-[28px] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/70">
+            <p className="font-semibold text-slate-900 dark:text-slate-50">Change password</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New password</Label>
+                <Input id="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
               </div>
-            ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm password</Label>
+                <Input id="confirm-password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+              </div>
+            </div>
+            <Button type="button" variant="outline" className="rounded-full" disabled={isSending} onClick={savePassword}>
+              Update password
+            </Button>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">

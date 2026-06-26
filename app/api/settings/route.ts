@@ -5,6 +5,7 @@ import type { Database } from "@/types/database.types";
 type SettingsResponse = {
   profile: {
     id: string;
+    email: string | null;
     phone: string | null;
     name: string | null;
     university: string | null;
@@ -74,25 +75,26 @@ async function getUserSettings(userId: string, supabase: ReturnType<typeof creat
   return {
     profile: {
       id: profile?.id || userId,
+      email: null,
       phone: profile?.phone || null,
       name: profile?.name || null,
       university: profile?.university || null,
       avatar_url: profile?.avatar_url || null,
       currency: profile?.currency || "BDT",
-      theme: profile?.theme || "system",
+      theme: profile?.theme || "light",
       first_day_of_month: profile?.first_day_of_month || 1
     },
     preferences: {
       language: preferences?.language || "bn",
       currency: preferences?.currency || profile?.currency || "BDT",
-      theme: preferences?.theme || (profile?.theme as "light" | "dark" | "system") || "system",
+      theme: preferences?.theme || (profile?.theme as "light" | "dark" | "system") || "light",
       first_day_of_month: preferences?.first_day_of_month || profile?.first_day_of_month || 1
     },
     budget: {
       monthlyIncome: Number(latestMonthlyIncome?.amount || 0),
       savingsGoal: Number(budget?.savings_goal || 0),
       emergencyReserve: Number(budget?.emergency_reserve || 0),
-      monthlyLimit: Number(budget?.monthly_limit || 12000),
+      monthlyLimit: Number(budget?.monthly_limit ?? 0),
       fixedExpenses: (fixedExpenses || []).map((item) => ({
         id: item.id,
         title: item.title,
@@ -114,18 +116,19 @@ export async function GET() {
       return NextResponse.json({
         profile: {
           id: "guest",
+          email: "guest@pocketsense.app",
           phone: "+8801711111111",
           name: "PocketSense User",
           university: "University of Dhaka",
           avatar_url: null,
           currency: "BDT",
-          theme: "system",
+          theme: "light",
           first_day_of_month: 1
         },
         preferences: {
           language: "bn",
           currency: "BDT",
-          theme: "system",
+          theme: "light",
           first_day_of_month: 1
         },
         budget: {
@@ -141,7 +144,10 @@ export async function GET() {
       } satisfies SettingsResponse);
     }
 
-    return NextResponse.json(await getUserSettings(user.id, supabase));
+    const settings = await getUserSettings(user.id, supabase);
+    settings.profile.email = user.email || null;
+
+    return NextResponse.json(settings);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load settings." },
@@ -170,6 +176,7 @@ export async function PUT(request: NextRequest) {
     if (body.section === "profile") {
       const payload = {
         name: typeof body.name === "string" ? body.name.trim() : null,
+        phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
         university: typeof body.university === "string" ? body.university.trim() : null
       } satisfies Database["public"]["Tables"]["profiles"]["Update"];
 
@@ -184,7 +191,7 @@ export async function PUT(request: NextRequest) {
       const theme =
         body.theme === "light" || body.theme === "dark" || body.theme === "system"
           ? body.theme
-          : "system";
+          : "light";
       const language = body.language === "en" ? "en" : "bn";
       const firstDayOfMonth = Math.min(Math.max(Number(body.first_day_of_month || 1), 1), 31);
       const preferencePayload = {
@@ -309,9 +316,12 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const settings = await getUserSettings(user.id, supabase);
+    settings.profile.email = user.email || null;
+
     return NextResponse.json({
       success: true,
-      settings: await getUserSettings(user.id, supabase)
+      settings
     });
   } catch (error) {
     return NextResponse.json(
