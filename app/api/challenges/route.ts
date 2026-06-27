@@ -1,10 +1,12 @@
 import { endOfMonth, format, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { CHALLENGES, type ChallengeDefinition } from "@/data/challenges";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { createRouteHandlerClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import { checkChallengeProgress } from "@/lib/utils/challengeTracker";
 import { calculateBudgetStreak } from "@/lib/utils/streakCalculator";
 import { FALLBACK_EXPENSES, normalizeExpense } from "@/lib/utils/expenses";
+
+export const dynamic = "force-dynamic";
 
 type UserChallengeRow = {
   id: string;
@@ -164,6 +166,37 @@ async function syncChallengesForUser(
 }
 
 export async function GET() {
+  if (!hasSupabaseEnv()) {
+    const profile = getFallbackProfile();
+    const streak = calculateBudgetStreak(FALLBACK_EXPENSES, {}, profile.longest_streak);
+    const challenges = CHALLENGES.map((definition, index) =>
+      buildChallengePayload(
+        definition,
+        index < 2
+          ? {
+              id: `fallback-${definition.id}`,
+              challenge_type: definition.id,
+              progress: Math.min(index + 2, definition.target),
+              target: definition.target,
+              status: index === 0 ? "active" : "completed",
+              started_at: new Date().toISOString(),
+              completed_at: index === 1 ? new Date().toISOString() : null,
+              user_id: "guest"
+            }
+          : null,
+        profile
+      )
+    );
+
+    return NextResponse.json({
+      profile,
+      streak,
+      activeChallenges: challenges.filter((challenge) => challenge.status === "active"),
+      availableChallenges: challenges.filter((challenge) => challenge.status === "available"),
+      completedChallenges: challenges.filter((challenge) => challenge.status === "completed")
+    });
+  }
+
   try {
     const supabase = createRouteHandlerClient();
     const {
@@ -230,6 +263,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!hasSupabaseEnv()) {
+      return NextResponse.json({ success: true, challengeId: body.challengeId, guest: true });
+    }
+
     const supabase = createRouteHandlerClient();
     const {
       data: { user }
@@ -279,6 +316,10 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
+    if (!hasSupabaseEnv()) {
+      return NextResponse.json({ success: true, guest: true });
+    }
+
     const supabase = createRouteHandlerClient();
     const {
       data: { user }
@@ -304,4 +345,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

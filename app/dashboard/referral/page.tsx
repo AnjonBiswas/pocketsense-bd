@@ -1,19 +1,30 @@
 import { ThemeIllustration } from "@/components/features/ThemeIllustration";
 import { ReferralCenter } from "@/components/features/ReferralCenter";
-import { createServerComponentClient } from "@/lib/supabase/server";
+import { createServerComponentClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import { generateReferralCode } from "@/lib/utils/referral";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReferralPage() {
-  const supabase = createServerComponentClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  let userId = "guest-pocket";
+  let profileName: string | null | undefined;
 
-  const { data: profile } = user
-    ? await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle()
-    : { data: null };
+  if (hasSupabaseEnv()) {
+    try {
+      const supabase = createServerComponentClient();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
 
-  const code = generateReferralCode(user?.id || "guest-pocket", profile?.name);
+      if (user) {
+        userId = user.id;
+        const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle();
+        profileName = profile?.name;
+      }
+    } catch {}
+  }
+
+  const code = generateReferralCode(userId, profileName);
 
   return (
     <section className="space-y-6">

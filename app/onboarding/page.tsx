@@ -1,9 +1,40 @@
 import { redirect } from "next/navigation";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
-import { createServerComponentClient } from "@/lib/supabase/server";
+import { createServerComponentClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import type { OnboardingData } from "@/lib/hooks/useOnboarding";
 
+export const dynamic = "force-dynamic";
+
+const emptyOnboardingData: OnboardingData = {
+  profile: {
+    name: "",
+    university: "",
+    academic_year: "",
+    semester: "",
+    avatar_url: null,
+    phone: ""
+  },
+  income: {
+    allowance: null,
+    hasTuition: false,
+    tuitionAmount: null,
+    hasFreelance: false,
+    freelanceAmount: null,
+    giftFrequency: "rarely"
+  },
+  budget: {
+    savingsGoal: null,
+    emergencyReserve: null,
+    fixedExpenses: [],
+    firstDayOfMonth: 1
+  }
+};
+
 export default async function OnboardingPage() {
+  if (!hasSupabaseEnv()) {
+    return <OnboardingWizard initialData={emptyOnboardingData} initialStep={1} />;
+  }
+
   const supabase = createServerComponentClient();
   const {
     data: { user }

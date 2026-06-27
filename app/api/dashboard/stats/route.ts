@@ -1,13 +1,15 @@
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { createRouteHandlerClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import { getSOSState } from "@/lib/sos/get-sos-state";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { getCategoryMeta } from "@/lib/utils/categories";
 import { generateAlerts } from "@/lib/utils/alerts";
 import type { DebtRecord, ReminderRecord } from "@/lib/utils/alerts";
 import type { Database } from "@/types/database.types";
+
+export const dynamic = "force-dynamic";
 
 const fallbackStats = {
   totalIncome: 18000,
@@ -119,6 +121,39 @@ export async function GET(request: NextRequest) {
   const daysInMonth = endOfMonth(today).getDate();
   const daysElapsed = today.getDate();
   const daysRemaining = Math.max(daysInMonth - daysElapsed, 1);
+
+  if (!hasSupabaseEnv()) {
+    return applyCacheHeaders(
+      NextResponse.json({
+        ...emptyUserStats,
+        daysElapsed,
+        daysInMonth,
+        daysRemaining,
+        dailyBudget: 0,
+        remainingBudget: 0,
+        topCategories: [],
+        alerts: [],
+        sos: {
+          shouldActivate: false,
+          severity: "warning" as const,
+          isActive: false,
+          remainingBudget: 0,
+          daysRemaining,
+          dailyBudget: 0,
+          activatedTips: [],
+          projectedSavings: 0,
+          canSurvive: true,
+          survivalTarget: 100,
+          hasLockedFunds: false,
+          lockedAmount: 0,
+          hasPin: false,
+          complianceScore: 0,
+          luxuryWarning: null
+        }
+      }),
+      { maxAge: 20, staleWhileRevalidate: 120 }
+    );
+  }
 
   try {
     const rateLimited = enforceRateLimit(request, {
@@ -299,6 +334,39 @@ export async function GET(request: NextRequest) {
       { maxAge: 20, staleWhileRevalidate: 120 }
     );
   } catch {
+    if (!hasSupabaseEnv()) {
+      return applyCacheHeaders(
+        NextResponse.json({
+          ...emptyUserStats,
+          daysElapsed,
+          daysInMonth,
+          daysRemaining,
+          dailyBudget: 0,
+          remainingBudget: 0,
+          topCategories: [],
+          alerts: [],
+          sos: {
+            shouldActivate: false,
+            severity: "warning" as const,
+            isActive: false,
+            remainingBudget: 0,
+            daysRemaining,
+            dailyBudget: 0,
+            activatedTips: [],
+            projectedSavings: 0,
+            canSurvive: true,
+            survivalTarget: 100,
+            hasLockedFunds: false,
+            lockedAmount: 0,
+            hasPin: false,
+            complianceScore: 0,
+            luxuryWarning: null
+          }
+        }),
+        { maxAge: 20, staleWhileRevalidate: 120 }
+      );
+    }
+
     const supabase = createRouteHandlerClient();
     const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
     const user = authResult.data.user;
