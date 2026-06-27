@@ -25,7 +25,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="hidden w-[280px] shrink-0 border-r border-white/50 bg-white/75 px-5 py-6 backdrop-blur xl:flex xl:flex-col xl:gap-6 dark:border-slate-800 dark:bg-slate-950/75">
+    <aside className="hidden w-[280px] shrink-0 border-r border-white/50 bg-white/75 px-5 py-6 text-foreground backdrop-blur xl:flex xl:flex-col xl:gap-6 dark:border-slate-800 dark:bg-slate-950/80">
       <div className="rounded-[28px] bg-gradient-to-br from-primary via-teal-600 to-emerald-500 p-5 text-primary-foreground shadow-xl shadow-teal-900/15">
         <div className="flex items-center gap-3">
           <div className="rounded-2xl bg-white/20 p-3">
@@ -52,7 +52,7 @@ export function Sidebar() {
                 "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                  : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                  : "text-slate-700 hover:bg-secondary/70 hover:text-foreground dark:text-slate-200 dark:hover:bg-slate-800/90 dark:hover:text-slate-50"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -85,7 +85,7 @@ export function Sidebar() {
               className="flex items-center justify-between rounded-2xl bg-secondary/45 px-3 py-3 dark:bg-slate-900/75"
             >
               <span className="text-sm text-muted-foreground">{item.label}</span>
-              <span className="font-semibold">{item.value}</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-50">{item.value}</span>
             </div>
           ))}
         </div>

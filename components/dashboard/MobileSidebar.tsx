@@ -73,7 +73,11 @@ export function MobileSidebar({
             <p className="text-sm font-semibold text-primary">{t("common.appName")}</p>
             <p className="text-xs text-muted-foreground">{userName}</p>
           </div>
-          <button type="button" className="tap-safe rounded-full p-2 hover:bg-secondary" onClick={() => setOpen(false)}>
+          <button
+            type="button"
+            className="tap-safe rounded-full p-2 text-slate-700 hover:bg-secondary dark:text-slate-100 dark:hover:bg-slate-800"
+            onClick={() => setOpen(false)}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -91,7 +95,7 @@ export function MobileSidebar({
                   "flex min-h-[48px] items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                    : "text-slate-700 hover:bg-secondary/70 hover:text-foreground dark:text-slate-200 dark:hover:bg-slate-800/90 dark:hover:text-slate-50"
                 )}
                 onClick={() => {
                   setOpen(false);

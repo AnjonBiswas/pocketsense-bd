@@ -60,7 +60,7 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
           <Button
             type="button"
             variant="outline"
-            className="tap-safe rounded-full xl:hidden"
+            className="tap-safe rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
             onClick={() => window.dispatchEvent(new Event("pocketsense-open-sidebar"))}
           >
             <Menu className="h-4 w-4" />
@@ -71,7 +71,7 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
           <Button
             type="button"
             variant="outline"
-            className="rounded-full"
+            className="rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
           >
             {resolvedTheme === "dark" ? (
@@ -87,7 +87,12 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
             )}
           </Button>
 
-          <Button type="button" variant="outline" className="rounded-full" onClick={toggleLanguage}>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            onClick={toggleLanguage}
+          >
             <Globe className="mr-2 h-4 w-4" />
             {language === "bn" ? t("common.english") : t("common.bangla")}
           </Button>

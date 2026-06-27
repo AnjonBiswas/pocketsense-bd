@@ -46,7 +46,7 @@ const typeConfig = {
   },
   streak_milestone: {
     icon: Flame,
-    className: "bg-rose-50 text-rose-700 border-rose-200"
+    className: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/14 dark:text-rose-100 dark:border-slate-600"
   },
   month_end_summary: {
     icon: BellRing,
@@ -58,7 +58,7 @@ const typeConfig = {
   },
   info: {
     icon: BellRing,
-    className: "bg-slate-50 text-slate-700 border-slate-200"
+    className: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800/90 dark:text-slate-100 dark:border-slate-600"
   }
 } as const;
 
@@ -69,7 +69,9 @@ function NotificationItemComponent({ notification, onOpen }: NotificationItemPro
   return (
     <div
       className={`rounded-[24px] border px-4 py-4 transition ${
-        notification.read ? "bg-white/70" : "bg-white shadow-sm"
+        notification.read
+          ? "bg-white/70 dark:bg-slate-950/80 dark:border-slate-700"
+          : "bg-white shadow-sm dark:bg-slate-950/95 dark:border-slate-700"
       }`}
     >
       <div className="flex items-start gap-3">
@@ -79,14 +81,20 @@ function NotificationItemComponent({ notification, onOpen }: NotificationItemPro
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">{notification.message}</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">{notification.title}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{notification.message}</p>
             </div>
             {!notification.read ? <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary" /> : null}
           </div>
           <div className="mt-3 flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">{formatNotificationTimeAgo(notification.created_at)}</p>
-            <Button type="button" size="sm" variant="ghost" className="h-8 rounded-full px-3" onClick={() => onOpen(notification)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full px-3 dark:text-slate-100 dark:hover:bg-slate-800"
+              onClick={() => onOpen(notification)}
+            >
               Open
             </Button>
           </div>

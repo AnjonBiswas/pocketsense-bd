@@ -25,7 +25,7 @@ export function BottomNav() {
                 "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                  : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                  : "text-slate-600 hover:bg-secondary/80 hover:text-foreground dark:text-slate-300 dark:hover:bg-slate-800/90 dark:hover:text-slate-50"
               )}
             >
               <Icon className="h-4 w-4" />

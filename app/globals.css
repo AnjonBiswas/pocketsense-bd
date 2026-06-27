@@ -84,6 +84,7 @@
   }
 
   .dark .text-slate-900,
+  .dark .text-slate-950,
   .dark .text-slate-800,
   .dark .text-slate-700,
   .dark .text-slate-600 {
@@ -109,6 +110,97 @@
   .dark .shadow-lg,
   .dark .shadow-xl {
     box-shadow: 0 18px 45px rgb(2 6 23 / 0.35) !important;
+  }
+
+  .dark .bg-sky-50 {
+    background-color: rgb(14 116 144 / 0.14) !important;
+  }
+
+  .dark .bg-emerald-50 {
+    background-color: rgb(5 150 105 / 0.14) !important;
+  }
+
+  .dark .bg-amber-50 {
+    background-color: rgb(217 119 6 / 0.14) !important;
+  }
+
+  .dark .bg-orange-50 {
+    background-color: rgb(234 88 12 / 0.14) !important;
+  }
+
+  .dark .bg-red-50 {
+    background-color: rgb(220 38 38 / 0.14) !important;
+  }
+
+  .dark .bg-indigo-50 {
+    background-color: rgb(79 70 229 / 0.14) !important;
+  }
+
+  .dark .bg-teal-50 {
+    background-color: rgb(13 148 136 / 0.14) !important;
+  }
+
+  .dark .bg-violet-50 {
+    background-color: rgb(124 58 237 / 0.14) !important;
+  }
+
+  .dark .text-sky-700,
+  .dark .text-sky-800,
+  .dark .text-sky-900 {
+    color: rgb(186 230 253) !important;
+  }
+
+  .dark .text-emerald-700,
+  .dark .text-emerald-800,
+  .dark .text-emerald-900 {
+    color: rgb(167 243 208) !important;
+  }
+
+  .dark .text-amber-700,
+  .dark .text-amber-800,
+  .dark .text-amber-900 {
+    color: rgb(253 230 138) !important;
+  }
+
+  .dark .text-orange-700,
+  .dark .text-orange-800,
+  .dark .text-orange-900 {
+    color: rgb(254 215 170) !important;
+  }
+
+  .dark .text-red-700,
+  .dark .text-red-800,
+  .dark .text-red-900 {
+    color: rgb(254 202 202) !important;
+  }
+
+  .dark .text-indigo-700,
+  .dark .text-indigo-800,
+  .dark .text-indigo-900 {
+    color: rgb(224 231 255) !important;
+  }
+
+  .dark .text-teal-700,
+  .dark .text-teal-800,
+  .dark .text-teal-900 {
+    color: rgb(153 246 228) !important;
+  }
+
+  .dark .text-violet-700,
+  .dark .text-violet-800,
+  .dark .text-violet-900 {
+    color: rgb(221 214 254) !important;
+  }
+
+  .dark .border-sky-200,
+  .dark .border-emerald-200,
+  .dark .border-amber-200,
+  .dark .border-orange-200,
+  .dark .border-red-200,
+  .dark .border-indigo-200,
+  .dark .border-teal-200,
+  .dark .border-violet-200 {
+    border-color: rgb(71 85 105 / 0.95) !important;
   }
 }
 

@@ -26,22 +26,22 @@ export function SOSModeActive({ state, onDeactivate }: SOSModeActiveProps) {
   const progress = Math.min((state.complianceScore / 100) * 100, 100);
   const toneClass =
     state.severity === "critical"
-      ? "border-red-200 bg-gradient-to-r from-red-50 to-orange-50"
-      : "border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50";
+      ? "border-red-200 bg-gradient-to-r from-red-50 to-orange-50 dark:border-red-500/30 dark:from-red-500/12 dark:to-orange-500/10"
+      : "border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:border-amber-500/30 dark:from-amber-500/12 dark:to-orange-500/10";
 
   return (
     <div className={`mb-5 rounded-[32px] border p-5 shadow-sm ${toneClass}`}>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-orange-700">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-orange-700 dark:text-orange-200">
             <ShieldAlert className="h-4 w-4" />
             Survival Mode Active
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
               Survive {state.daysRemaining} more days with ৳{state.remainingBudget}
             </h2>
-            <p className="mt-1 text-sm text-slate-700">
+            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
               Daily survival budget: ৳{state.dailyBudget} | Compliance score: {state.complianceScore}%
             </p>
           </div>
@@ -49,7 +49,7 @@ export function SOSModeActive({ state, onDeactivate }: SOSModeActiveProps) {
             {selectedTips.map((tip) => (
               <span
                 key={tip.id}
-                className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700"
+                className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100"
               >
                 {tip.title.en}
               </span>
@@ -58,17 +58,22 @@ export function SOSModeActive({ state, onDeactivate }: SOSModeActiveProps) {
         </div>
 
         <div className="min-w-[260px] space-y-3">
-          <div className="flex items-center justify-between text-xs font-medium text-slate-600">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-300">
             <span>Month survival progress</span>
             <span>{Math.round(progress)}%</span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-white/70">
+          <div className="h-3 overflow-hidden rounded-full bg-white/70 dark:bg-slate-800/90">
             <div
               className="h-full rounded-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <Button type="button" variant="outline" className="w-full rounded-full" onClick={onDeactivate}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-full dark:border-slate-600 dark:bg-slate-950/60 dark:text-slate-100 dark:hover:bg-slate-800"
+            onClick={onDeactivate}
+          >
             <TimerReset className="mr-2 h-4 w-4" />
             Deactivate when recovered
           </Button>

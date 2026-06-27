@@ -118,10 +118,15 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
           ) : null}
 
           {!notifications.length && !isPending ? (
-            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center dark:border-slate-700 dark:bg-slate-900/80">
               <p className="font-medium text-slate-900">সবকিছু শান্ত আছে</p>
               <p className="mt-1 text-sm text-muted-foreground">নতুন alert এলে এখানে দেখাবে।</p>
-              <Button type="button" variant="outline" className="mt-4 rounded-full" onClick={() => load(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4 rounded-full dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
+                onClick={() => load(true)}
+              >
                 Generate sample alerts
               </Button>
             </div>

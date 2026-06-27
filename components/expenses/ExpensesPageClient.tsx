@@ -252,7 +252,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                 Search
               </Button>
             </div>
-            <div className="rounded-3xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            <div className="rounded-3xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:bg-emerald-500/14 dark:text-emerald-100">
               Total spent: ৳{meta.totalSpent.toFixed(0)}
             </div>
             <Button
@@ -269,7 +269,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
             <input
               type="checkbox"
               checked={allSelected}
@@ -286,18 +286,18 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               {Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-20 animate-pulse rounded-[28px] border border-white/50 bg-slate-100"
+                  className="h-20 animate-pulse rounded-[28px] border border-white/50 bg-slate-100 dark:bg-slate-800"
                 />
               ))}
             </div>
           ) : null}
 
           {!isRefreshing && expenses.length === 0 ? (
-            <div className="rounded-[32px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white text-4xl shadow-sm">
+            <div className="rounded-[32px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-900/75">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white text-4xl shadow-sm dark:bg-slate-950 dark:text-slate-50">
                 🧾
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">No expenses yet</h3>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50">No expenses yet</h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 Add your first expense and PocketSense will group everything here by time.
               </p>
@@ -308,7 +308,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
             Object.entries(groupedExpenses).map(([group, items]) => (
               <div key={group} className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{group}</h2>
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">{group}</h2>
                   <p className="text-xs text-muted-foreground">
                     ৳{items.reduce((sum, expense) => sum + expense.amount, 0).toFixed(0)}
                   </p>
@@ -332,7 +332,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               </div>
             ))}
 
-          <div className="flex flex-col gap-3 rounded-[28px] bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-[28px] bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:bg-slate-900/75">
             <p className="text-sm text-muted-foreground">
               Page {meta.page} of {meta.totalPages} • {meta.total} expenses
             </p>
