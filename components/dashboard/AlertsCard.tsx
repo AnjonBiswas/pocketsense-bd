@@ -14,15 +14,18 @@ type AlertsCardProps = {
 const alertStyles = {
   warning: {
     icon: AlertCircle,
-    className: "border-amber-200/70 bg-amber-50 text-amber-950"
+    className:
+      "border-amber-200/70 bg-amber-50 text-amber-950 dark:border-amber-200/70 dark:bg-amber-100/95 dark:text-amber-950"
   },
   info: {
     icon: BellRing,
-    className: "border-sky-200/70 bg-sky-50 text-sky-950"
+    className:
+      "border-sky-200/70 bg-sky-50 text-sky-950 dark:border-sky-200/70 dark:bg-sky-100/95 dark:text-sky-950"
   },
   success: {
     icon: CheckCircle2,
-    className: "border-emerald-200/70 bg-emerald-50 text-emerald-950"
+    className:
+      "border-emerald-200/70 bg-emerald-50 text-emerald-950 dark:border-emerald-200/70 dark:bg-emerald-50 dark:text-emerald-950"
   }
 } as const;
 

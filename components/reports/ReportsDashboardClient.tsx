@@ -131,22 +131,22 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
       {
         label: "Total Income",
         value: `৳${data.metrics.totalIncome.toFixed(0)}`,
-        tone: "bg-emerald-50 text-emerald-900 dark:bg-emerald-500/12 dark:text-emerald-100 dark:border-emerald-500/20"
+        tone: "bg-emerald-50 text-emerald-900 dark:bg-emerald-100/95 dark:text-emerald-950 dark:border-emerald-200/70"
       },
       {
         label: "Total Expenses",
         value: `৳${data.metrics.totalExpenses.toFixed(0)}`,
-        tone: "bg-rose-50 text-rose-900 dark:bg-rose-500/12 dark:text-rose-100 dark:border-rose-500/20"
+        tone: "bg-rose-50 text-rose-900 dark:bg-rose-100/95 dark:text-rose-950 dark:border-rose-200/70"
       },
       {
         label: "Savings",
         value: `৳${data.metrics.savings.toFixed(0)}`,
-        tone: "bg-sky-50 text-sky-900 dark:bg-sky-500/12 dark:text-sky-100 dark:border-sky-500/20"
+        tone: "bg-sky-50 text-sky-900 dark:bg-sky-100/95 dark:text-sky-950 dark:border-sky-200/70"
       },
       {
         label: "Savings Rate",
         value: `${data.metrics.savingsRate.toFixed(1)}%`,
-        tone: "bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-100 dark:border-amber-400/20"
+        tone: "bg-amber-50 text-amber-900 dark:bg-amber-100/95 dark:text-amber-950 dark:border-amber-200/70"
       }
     ],
     [data]
@@ -270,8 +270,8 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-medium ${
                         item.deltaPercent <= 0
-                          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-100"
-                          : "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-100"
+                          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-100/95 dark:text-emerald-950"
+                          : "bg-amber-100 text-amber-900 dark:bg-amber-100/95 dark:text-amber-950"
                       }`}
                     >
                       {item.deltaPercent <= 0

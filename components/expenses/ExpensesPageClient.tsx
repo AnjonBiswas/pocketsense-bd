@@ -252,7 +252,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                 Search
               </Button>
             </div>
-            <div className="rounded-3xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:bg-emerald-500/14 dark:text-emerald-100">
+            <div className="rounded-3xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border dark:border-emerald-200/70 dark:bg-emerald-100/95 dark:text-emerald-950">
               Total spent: ৳{meta.totalSpent.toFixed(0)}
             </div>
             <Button

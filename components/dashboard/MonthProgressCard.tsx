@@ -61,15 +61,15 @@ export function MonthProgressCard({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-500/12">
-                <p className="text-sm text-emerald-900/70 dark:text-emerald-200/80">Projected savings</p>
-                <p className="mt-2 text-2xl font-semibold text-emerald-950 dark:text-emerald-100">
+              <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-500/18 dark:ring-1 dark:ring-emerald-400/10">
+                <p className="text-sm text-emerald-900/70 dark:text-emerald-200">Projected savings</p>
+                <p className="mt-2 text-2xl font-semibold text-emerald-950 dark:text-emerald-200">
                   ৳{projectedSavings.toFixed(0)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-amber-50 p-4 dark:bg-amber-400/12">
-                <p className="text-sm text-amber-900/70 dark:text-amber-200/80">Target reserve</p>
-                <p className="mt-2 text-2xl font-semibold text-amber-950 dark:text-amber-100">
+              <div className="rounded-2xl bg-amber-50 p-4 dark:bg-amber-400/18 dark:ring-1 dark:ring-amber-300/10">
+                <p className="text-sm text-amber-900/70 dark:text-amber-200">Target reserve</p>
+                <p className="mt-2 text-2xl font-semibold text-amber-950 dark:text-amber-200">
                   ৳{savingsGoal.toFixed(0)}
                 </p>
               </div>

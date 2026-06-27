@@ -60,7 +60,7 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
           <Button
             type="button"
             variant="outline"
-            className="tap-safe rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="tap-safe rounded-full xl:hidden dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
             onClick={() => window.dispatchEvent(new Event("pocketsense-open-sidebar"))}
           >
             <Menu className="h-4 w-4" />
@@ -70,19 +70,21 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
 
           <Button
             type="button"
-            variant="outline"
-            className="rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            variant="ghost"
+            aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="tap-safe h-11 rounded-full border border-white/60 bg-white px-3 text-slate-900 shadow-sm hover:bg-secondary/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:hover:bg-slate-800"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
           >
             {resolvedTheme === "dark" ? (
               <>
-                <Sun className="mr-2 h-4 w-4" />
-                Light
+                <Sun className="h-4 w-4" />
+                <span className="hidden sm:ml-2 sm:inline">Light</span>
               </>
             ) : (
               <>
-                <Moon className="mr-2 h-4 w-4" />
-                Dark
+                <Moon className="h-4 w-4" />
+                <span className="hidden sm:ml-2 sm:inline">Dark</span>
               </>
             )}
           </Button>
@@ -90,11 +92,11 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
           <Button
             type="button"
             variant="outline"
-            className="rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="tap-safe rounded-full dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
             onClick={toggleLanguage}
           >
             <Globe className="mr-2 h-4 w-4" />
-            {language === "bn" ? t("common.english") : t("common.bangla")}
+            <span className="hidden sm:inline">{language === "bn" ? t("common.english") : t("common.bangla")}</span>
           </Button>
 
           <DropdownMenu>

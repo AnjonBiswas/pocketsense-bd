@@ -1,7 +1,26 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient, resetBrowserClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
+
+function clearSupabaseCookies() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  try {
+    const cookieNames = document.cookie
+      .split(";")
+      .map((cookie) => cookie.trim().split("=")[0])
+      .filter((name) => name.startsWith("sb-"));
+
+    for (const name of cookieNames) {
+      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
+    }
+  } catch {
+    // Ignore cookie cleanup errors.
+  }
+}
 
 function clearStoredSupabaseSession() {
   if (typeof window === "undefined") {
@@ -23,6 +42,9 @@ function clearStoredSupabaseSession() {
   } catch {
     // Ignore browser storage cleanup errors.
   }
+
+  clearSupabaseCookies();
+  resetBrowserClient();
 }
 
 async function clearServerSession() {
@@ -34,6 +56,16 @@ async function clearServerSession() {
     method: "POST",
     credentials: "same-origin"
   }).catch(() => null);
+}
+
+async function resetAuthState() {
+  await clearServerSession();
+
+  const currentClient = createClient();
+  await currentClient.auth.signOut().catch(() => null);
+  await currentClient.auth.signOut({ scope: "global" }).catch(() => null);
+
+  clearStoredSupabaseSession();
 }
 
 function markInstallPromptEligible() {
@@ -81,10 +113,8 @@ async function ensureProfileForUser(
 }
 
 export async function signInWithEmail(email: string, password: string) {
+  await resetAuthState();
   const supabase = createClient();
-  await clearServerSession();
-  await supabase.auth.signOut({ scope: "local" }).catch(() => null);
-  clearStoredSupabaseSession();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
@@ -92,6 +122,21 @@ export async function signInWithEmail(email: string, password: string) {
   });
 
   if (!error && data.user) {
+    const signedInEmail = data.user.email?.trim().toLowerCase();
+    if (signedInEmail && signedInEmail !== email.trim().toLowerCase()) {
+      await supabase.auth.signOut().catch(() => null);
+      clearStoredSupabaseSession();
+
+      return {
+        success: false,
+        user: null,
+        session: null,
+        onboardingCompleted: false,
+        onboardingStep: 1,
+        error: "Session mismatch detected. Please try logging in again."
+      };
+    }
+
     markInstallPromptEligible();
     const profileState = await ensureProfileForUser(supabase, data.user);
 
@@ -120,10 +165,8 @@ export async function signUpWithEmail(params: {
   password: string;
   name?: string;
 }) {
+  await resetAuthState();
   const supabase = createClient();
-  await clearServerSession();
-  await supabase.auth.signOut({ scope: "local" }).catch(() => null);
-  clearStoredSupabaseSession();
 
   const { data, error } = await supabase.auth.signUp({
     email: params.email.trim(),
@@ -146,6 +189,20 @@ export async function signUpWithEmail(params: {
   }
 
   if (data.user && data.session) {
+    const signedUpEmail = data.user.email?.trim().toLowerCase();
+    if (signedUpEmail && signedUpEmail !== params.email.trim().toLowerCase()) {
+      await supabase.auth.signOut().catch(() => null);
+      clearStoredSupabaseSession();
+
+      return {
+        success: false,
+        user: null,
+        session: null,
+        requiresEmailConfirmation: false,
+        error: "Session mismatch detected. Please try signing up again."
+      };
+    }
+
     markInstallPromptEligible();
     const profileState = await ensureProfileForUser(supabase, data.user, params.name);
 
@@ -192,10 +249,8 @@ export async function updateEmail(email: string) {
 }
 
 export async function signInWithGoogle() {
+  await resetAuthState();
   const supabase = createClient();
-  await clearServerSession();
-  await supabase.auth.signOut({ scope: "local" }).catch(() => null);
-  clearStoredSupabaseSession();
 
   const redirectTo =
     typeof window !== "undefined"
@@ -218,7 +273,8 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
   const supabase = createClient();
-  const { error } = await supabase.auth.signOut({ scope: "local" });
+  const { error } = await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "global" }).catch(() => null);
   await clearServerSession();
   clearStoredSupabaseSession();
 

@@ -50,7 +50,7 @@ export function OfflineIndicator() {
           <CloudOff className="h-5 w-5" />
           <div>
             <p className="font-semibold">You&apos;re offline</p>
-            <p className="text-sm opacity-80">New expense actions will be queued and synced when you reconnect.</p>
+            <p className="text-sm opacity-80 dark:text-amber-200/90">New expense actions will be queued and synced when you reconnect.</p>
           </div>
         </div>
         <Button type="button" variant="outline" className="rounded-full" disabled={isSyncing}>

@@ -62,15 +62,20 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="rounded-[28px] border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-100 p-5 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/10">
-        <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+      <div
+        className="rounded-[28px] border border-amber-200/80 bg-gradient-to-br from-red-200 to-orange-100 p-5 dark:border-amber-200/70 dark:from-red-200 dark:to-orange-100"
+        style={{ color: "#9f2e12" }}
+      >
+        <div className="flex items-center gap-2">
           <Flame className="h-5 w-5" />
-          <h3 className="font-semibold">{t("dashboard.streak")}</h3>
+          <h3 className="font-bold">{t("dashboard.streak")}</h3>
         </div>
-        <p className="mt-3 text-3xl font-bold text-amber-950 dark:text-amber-50">
+        <p className="mt-3 text-3xl font-bold" style={{ color: "#7c2d12" }}>
           {stats?.streak ?? 0} <span className="text-base font-medium">{t("dashboard.days")}</span>
         </p>
-        <p className="mt-2 text-sm text-amber-900/80 dark:text-amber-100/80">{t("dashboard.streakText")}</p>
+        <p className="mt-2 text-sm" style={{ color: "#5b3414" }}>
+          {t("dashboard.streakText")}
+        </p>
       </div>
 
       <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950/90">

@@ -46,7 +46,7 @@ const typeConfig = {
   },
   streak_milestone: {
     icon: Flame,
-    className: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/14 dark:text-rose-100 dark:border-slate-600"
+    className: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-100/95 dark:text-rose-950 dark:border-rose-200/70"
   },
   month_end_summary: {
     icon: BellRing,

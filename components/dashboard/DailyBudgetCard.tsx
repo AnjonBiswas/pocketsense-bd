@@ -12,7 +12,8 @@ function getBudgetTone(remainingPercentage: number) {
     return {
       label: "স্বস্তিতে আছ",
       bar: "bg-emerald-500",
-      pill: "bg-emerald-100 text-emerald-900"
+      pill:
+        "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-300/85 dark:text-emerald-950 dark:ring-emerald-200/60"
     };
   }
 
@@ -20,14 +21,16 @@ function getBudgetTone(remainingPercentage: number) {
     return {
       label: "সাবধানে খরচ করো",
       bar: "bg-amber-400",
-      pill: "bg-amber-100 text-amber-900"
+      pill:
+        "bg-amber-100 text-amber-900 ring-1 ring-amber-200/80 dark:bg-amber-200/85 dark:text-amber-950 dark:ring-amber-200/60"
     };
   }
 
   return {
     label: "আজ একটু ধরে চল",
     bar: "bg-rose-500",
-    pill: "bg-rose-100 text-rose-900"
+    pill:
+      "bg-rose-100 text-rose-900 ring-1 ring-rose-200/80 dark:bg-rose-200/85 dark:text-rose-950 dark:ring-rose-200/60"
   };
 }
 
