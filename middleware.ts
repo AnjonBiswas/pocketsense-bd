@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createMiddlewareClient } from "@/lib/supabase/server";
+import { createMiddlewareClient, hasSupabaseEnv } from "@/lib/supabase/server";
 
 const PUBLIC_PATHS = ["/", "/privacy-policy", "/terms-of-service"];
 const AUTH_PATHS = ["/auth/login", "/auth/signup"];
@@ -14,6 +14,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth/callback") ||
     pathname.includes(".")
   ) {
+    return response;
+  }
+
+  if (!hasSupabaseEnv()) {
+    if (pathname.startsWith("/dashboard") || pathname === "/onboarding") {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+
     return response;
   }
 

@@ -1,23 +1,32 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-const hasAuthEnv = Boolean(process.env.E2E_PHONE && process.env.E2E_OTP);
+const hasAuthEnv = Boolean(process.env.E2E_EMAIL && process.env.E2E_PASSWORD);
 
-test.describe("PocketSense auth flow", () => {
-  test.skip(!hasAuthEnv, "Set E2E_PHONE and E2E_OTP to run real auth/onboarding checks.");
-
-  test("login flow", async ({ page }) => {
+test.describe("PocketSense auth", () => {
+  test("login page loads", async ({ page }) => {
     await page.goto("/auth/login");
-    await page.getByRole("textbox").fill(process.env.E2E_PHONE || "");
-    await page.getByRole("button", { name: /otp|code|send/i }).click();
-    await page.waitForURL(/\/auth\/verify/);
-    await page.getByRole("textbox").first().fill(process.env.E2E_OTP || "");
-    await expect(page).toHaveURL(/\/(dashboard|onboarding)/);
+    await expect(page).toHaveURL(/\/auth\/login/);
+    await expect(page.getByRole("heading", { name: /log in to pocketsense/i })).toBeVisible();
+    await expect(page.getByLabel(/email/i)).toBeVisible();
+    await expect(page.getByLabel(/^password$/i)).toBeVisible();
   });
 
-  test("onboarding flow", async ({ page }) => {
-    await page.goto("/onboarding");
-    await expect(page.locator("body")).toContainText(/PocketSense|টাকা|Get Started/i);
-    await page.getByRole("button", { name: /get started|শুরু/i }).click();
-    await expect(page.locator("body")).toContainText(/Name|University|Semester|Allowance/i);
+  test("signup page loads", async ({ page }) => {
+    await page.goto("/auth/signup");
+    await expect(page).toHaveURL(/\/auth\/signup/);
+    await expect(page.getByRole("heading", { name: /create your free pocketsense account/i })).toBeVisible();
+    await expect(page.getByLabel(/full name/i)).toBeVisible();
+    await expect(page.getByLabel(/email/i)).toBeVisible();
+  });
+
+  test("login flow with configured test credentials", async ({ page }) => {
+    test.skip(!hasAuthEnv, "Set E2E_EMAIL and E2E_PASSWORD to run authenticated login checks.");
+
+    await page.goto("/auth/login");
+    await page.getByLabel(/email/i).fill(process.env.E2E_EMAIL || "");
+    await page.getByLabel(/^password$/i).fill(process.env.E2E_PASSWORD || "");
+    await page.getByRole("button", { name: /log in/i }).click();
+
+    await expect(page).toHaveURL(/\/(dashboard|onboarding)/);
   });
 });
