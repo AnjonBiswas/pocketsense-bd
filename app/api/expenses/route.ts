@@ -248,12 +248,15 @@ export async function GET(request: NextRequest) {
   }
 
   const filters = parseFilters(request);
+  let hasAuthenticatedUser = false;
 
   try {
     const supabase = createRouteHandlerClient();
     const {
       data: { user }
     } = await supabase.auth.getUser();
+
+    hasAuthenticatedUser = Boolean(user);
 
     if (!user) {
       const filtered = applyExpenseFilters(FALLBACK_EXPENSES, filters);
@@ -286,10 +289,7 @@ export async function GET(request: NextRequest) {
       { maxAge: 15, staleWhileRevalidate: 60 }
     );
   } catch (error) {
-    const supabase = createRouteHandlerClient();
-    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-
-    if (authResult.data.user) {
+    if (hasAuthenticatedUser) {
       return NextResponse.json({
         expenses: [],
         meta: {

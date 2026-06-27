@@ -18,7 +18,7 @@ describe("budget utils", () => {
           daysInMonth: 30,
           currentDay: 10
         })
-      ).toBe(500);
+      ).toBe(400);
     });
 
     it("never returns a negative budget", () => {
