@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type MonthProgressCardProps = {
   daysElapsed: number;
@@ -9,6 +9,7 @@ type MonthProgressCardProps = {
   monthlyLimit: number;
   totalIncome: number;
   savingsGoal: number;
+  emergencyReserve: number;
 };
 
 export function MonthProgressCard({
@@ -17,11 +18,18 @@ export function MonthProgressCard({
   totalExpenses,
   monthlyLimit,
   totalIncome,
-  savingsGoal
+  savingsGoal,
+  emergencyReserve
 }: MonthProgressCardProps) {
   const spentPercentage = monthlyLimit > 0 ? Math.min((totalExpenses / monthlyLimit) * 100, 100) : 0;
-  const projectedSavings = Math.max(totalIncome - totalExpenses - savingsGoal, 0);
-  const needsSetup = monthlyLimit === 0 && totalIncome === 0 && savingsGoal === 0 && totalExpenses === 0;
+  const plannedSavings = savingsGoal + emergencyReserve;
+  const projectedSavings = Math.max(totalIncome - totalExpenses - plannedSavings, 0);
+  const needsSetup =
+    monthlyLimit === 0 &&
+    totalIncome === 0 &&
+    savingsGoal === 0 &&
+    emergencyReserve === 0 &&
+    totalExpenses === 0;
 
   return (
     <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
@@ -70,7 +78,7 @@ export function MonthProgressCard({
               <div className="rounded-2xl bg-amber-50 p-4 dark:bg-amber-400/18 dark:ring-1 dark:ring-amber-300/10">
                 <p className="text-sm text-amber-900/70 dark:text-amber-200">Target reserve</p>
                 <p className="mt-2 text-2xl font-semibold text-amber-950 dark:text-amber-200">
-                  ৳{savingsGoal.toFixed(0)}
+                  ৳{emergencyReserve.toFixed(0)}
                 </p>
               </div>
             </div>

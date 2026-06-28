@@ -55,6 +55,7 @@ export function DashboardOverviewClient({
           monthlyLimit={safeStats.monthlyLimit}
           totalIncome={safeStats.totalIncome}
           savingsGoal={safeStats.savingsGoal}
+          emergencyReserve={safeStats.emergencyReserve}
         />
       </div>
 

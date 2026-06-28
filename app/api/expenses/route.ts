@@ -7,10 +7,7 @@ import { fetchPaginatedExpenses } from "@/lib/supabase/queries";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { isLuxuryCategory } from "@/lib/utils/sosMode";
 import {
-  FALLBACK_EXPENSES,
-  applyExpenseFilters,
   normalizeExpense,
-  paginateExpenses,
   type ExpenseQueryFilters
 } from "@/lib/utils/expenses";
 import { CATEGORIES } from "@/lib/utils/categories";
@@ -259,20 +256,16 @@ export async function GET(request: NextRequest) {
     hasAuthenticatedUser = Boolean(user);
 
     if (!user) {
-      const filtered = applyExpenseFilters(FALLBACK_EXPENSES, filters);
-      const paginated = paginateExpenses(filtered, filters.page, filters.limit);
-      const totalSpent = filtered.reduce((sum, expense) => sum + expense.amount, 0);
-
       return applyCacheHeaders(
         NextResponse.json({
-          expenses: paginated.data,
+          expenses: [],
           meta: {
-            page: paginated.page,
-            limit: paginated.limit,
-            total: paginated.total,
-            totalPages: paginated.totalPages,
-            hasMore: paginated.hasMore,
-            totalSpent
+            page: filters.page,
+            limit: filters.limit,
+            total: 0,
+            totalPages: 1,
+            hasMore: false,
+            totalSpent: 0
           }
         }),
         { maxAge: 15, staleWhileRevalidate: 60 }
