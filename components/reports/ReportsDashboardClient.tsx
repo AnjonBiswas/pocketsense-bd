@@ -6,6 +6,7 @@ import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { Download, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SpendingTrendChart = dynamic(
   () => import("@/components/reports/SpendingTrendChart").then((module) => module.SpendingTrendChart),
@@ -106,6 +107,7 @@ function getPresetRange(preset: "thisMonth" | "lastMonth" | "last3Months") {
 }
 
 export function ReportsDashboardClient({ initialData }: { initialData: ReportsPayload }) {
+  const { t } = useLanguage();
   const [data, setData] = useState(initialData);
   const [range, setRange] = useState({
     preset: "thisMonth" as "thisMonth" | "lastMonth" | "last3Months" | "custom",
@@ -129,40 +131,36 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
   const metricCards = useMemo(
     () => [
       {
-        label: "Total Income",
+        label: t("reports.totalIncome"),
         value: `৳${data.metrics.totalIncome.toFixed(0)}`,
         tone: "bg-emerald-50 text-emerald-900 dark:bg-emerald-100/95 dark:text-emerald-950 dark:border-emerald-200/70"
       },
       {
-        label: "Total Expenses",
+        label: t("reports.totalExpenses"),
         value: `৳${data.metrics.totalExpenses.toFixed(0)}`,
         tone: "bg-rose-50 text-rose-900 dark:bg-rose-100/95 dark:text-rose-950 dark:border-rose-200/70"
       },
       {
-        label: "Savings",
+        label: t("reports.savings"),
         value: `৳${data.metrics.savings.toFixed(0)}`,
         tone: "bg-sky-50 text-sky-900 dark:bg-sky-100/95 dark:text-sky-950 dark:border-sky-200/70"
       },
       {
-        label: "Savings Rate",
+        label: t("reports.savingsRate"),
         value: `${data.metrics.savingsRate.toFixed(1)}%`,
         tone: "bg-amber-50 text-amber-900 dark:bg-amber-100/95 dark:text-amber-950 dark:border-amber-200/70"
       }
     ],
-    [data]
+    [data, t]
   );
 
   return (
     <section className="space-y-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary">Reports</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-50">
-            Financial story dashboard
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Professional charts, trends, and insights for your student budget.
-          </p>
+          <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary">{t("reports.title")}</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-50">{t("reports.heading")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("reports.description")}</p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -177,27 +175,23 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
                 loadReports(next.startDate, next.endDate, preset);
               }}
             >
-              {preset === "thisMonth" ? "This Month" : preset === "lastMonth" ? "Last Month" : "Last 3 Months"}
+              {preset === "thisMonth" ? t("reports.thisMonth") : preset === "lastMonth" ? t("reports.lastMonth") : t("reports.last3Months")}
             </Button>
           ))}
           <InputDatePair
             startDate={range.startDate}
             endDate={range.endDate}
             onApply={(startDate, endDate) => loadReports(startDate, endDate, "custom")}
+            customLabel={t("reports.custom")}
           />
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-full"
-            onClick={() => loadReports(range.startDate, range.endDate)}
-          >
+          <Button type="button" variant="outline" className="rounded-full" onClick={() => loadReports(range.startDate, range.endDate)}>
             <RefreshCcw className={`mr-2 h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
-            Refresh
+            {t("reports.refresh")}
           </Button>
           <a href={`/api/reports/export?startDate=${range.startDate}&endDate=${range.endDate}`}>
             <Button type="button" variant="outline" className="rounded-full">
               <Download className="mr-2 h-4 w-4" />
-              Export PDF
+              {t("reports.exportPdf")}
             </Button>
           </a>
         </div>
@@ -227,29 +221,20 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
           <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Next month forecast</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
-                  Predicted category spend
-                </h3>
-              </div>
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">{t("reports.forecast")}</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">{t("reports.predictedSpend")}</h3>
             </div>
             <div className="mt-5 space-y-3">
               {data.forecast.slice(0, 5).map((item) => (
-                <div
-                  key={item.category}
-                  className="flex items-center justify-between rounded-2xl bg-secondary/45 px-4 py-3 dark:bg-slate-900/75"
-                >
+                <div key={item.category} className="flex items-center justify-between rounded-2xl bg-secondary/45 px-4 py-3 dark:bg-slate-900/75">
                   <div>
                     <p className="font-medium text-slate-900 dark:text-slate-50">{item.label}</p>
                     <p className="text-xs text-muted-foreground">
-                      Trend: {item.trend === "up" ? "rising" : item.trend === "down" ? "cooling down" : "steady"}
+                      {t("reports.trend")}: {item.trend === "up" ? t("reports.rising") : item.trend === "down" ? t("reports.cooling") : t("reports.steady")}
                     </p>
                   </div>
-                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    ৳{item.predictedAmount.toFixed(0)}
-                  </p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">৳{item.predictedAmount.toFixed(0)}</p>
                 </div>
               ))}
             </div>
@@ -258,10 +243,8 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
 
         <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
           <CardContent className="p-5">
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Budget comparison</p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
-              Compared with average students
-            </h3>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">{t("reports.comparison")}</p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">{t("reports.comparedWithStudents")}</h3>
             <div className="mt-5 space-y-3">
               {data.studentComparison.map((item) => (
                 <div key={item.category} className="rounded-2xl bg-secondary/45 px-4 py-4 dark:bg-slate-900/75">
@@ -275,8 +258,8 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
                       }`}
                     >
                       {item.deltaPercent <= 0
-                        ? `${Math.abs(item.deltaPercent).toFixed(0)}% lower`
-                        : `${item.deltaPercent.toFixed(0)}% higher`}
+                        ? `${Math.abs(item.deltaPercent).toFixed(0)}% ${t("reports.lower")}`
+                        : `${item.deltaPercent.toFixed(0)}% ${t("reports.higher")}`}
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">{item.insight}</p>
@@ -295,11 +278,13 @@ export function ReportsDashboardClient({ initialData }: { initialData: ReportsPa
 function InputDatePair({
   startDate,
   endDate,
-  onApply
+  onApply,
+  customLabel
 }: {
   startDate: string;
   endDate: string;
   onApply: (startDate: string, endDate: string) => void;
+  customLabel: string;
 }) {
   const [localStartDate, setLocalStartDate] = useState(startDate);
   const [localEndDate, setLocalEndDate] = useState(endDate);
@@ -319,7 +304,7 @@ function InputDatePair({
         className="rounded-full border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
       />
       <Button type="button" className="rounded-full" onClick={() => onApply(localStartDate, localEndDate)}>
-        Custom
+        {customLabel}
       </Button>
     </div>
   );

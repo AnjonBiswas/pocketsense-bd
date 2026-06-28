@@ -2,12 +2,14 @@
 
 import { useMemo } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { getCategoryMeta } from "@/lib/utils/categories";
-import { useExpenseStore } from "@/store/expenseStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getCategoryMeta } from "@/lib/utils/categories";
+import { useExpenseStore } from "@/store/expenseStore";
 
 export function TopCategoriesCard() {
+  const { language, t } = useLanguage();
   const expenses = useExpenseStore((state) => state.expenses);
   const activeCategory = useExpenseStore((state) => state.filters.category || null);
   const setCategoryFilter = useExpenseStore((state) => state.setCategoryFilter);
@@ -33,22 +35,15 @@ export function TopCategoriesCard() {
   return (
     <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
       <CardHeader>
-        <CardTitle className="text-lg">Top categories</CardTitle>
-        <CardDescription>এই মাসে কোন জায়গায় সবচেয়ে বেশি খরচ হয়েছে</CardDescription>
+        <CardTitle className="text-lg">{t("dashboard.topCategories")}</CardTitle>
+        <CardDescription>{t("dashboard.topCategoriesHint")}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="h-[240px]">
           {topFive.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={topFive}
-                  dataKey="amount"
-                  nameKey="category"
-                  innerRadius={55}
-                  outerRadius={95}
-                  paddingAngle={3}
-                >
+                <Pie data={topFive} dataKey="amount" nameKey="category" innerRadius={55} outerRadius={95} paddingAngle={3}>
                   {topFive.map((entry) => (
                     <Cell key={entry.category} fill={getCategoryMeta(entry.category).color} />
                   ))}
@@ -57,14 +52,14 @@ export function TopCategoriesCard() {
                   formatter={(value: number, _name, payload) => {
                     const category = payload?.payload?.category || "other";
                     const meta = getCategoryMeta(category);
-                    return [`৳${Number(value).toFixed(0)}`, meta.bn];
+                    return [`৳${Number(value).toFixed(0)}`, language === "bn" ? meta.bn : meta.en];
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex h-full items-center justify-center rounded-3xl bg-secondary/40 text-sm text-muted-foreground dark:bg-slate-900/80">
-              No spending data yet
+              {t("dashboard.noSpendingData")}
             </div>
           )}
         </div>
@@ -93,8 +88,8 @@ export function TopCategoriesCard() {
                     {meta.icon}
                   </div>
                   <div>
-                    <p className="font-semibold">{meta.bn}</p>
-                    <p className="text-xs text-muted-foreground">{meta.en}</p>
+                    <p className="font-semibold">{language === "bn" ? meta.bn : meta.en}</p>
+                    <p className="text-xs text-muted-foreground">{language === "bn" ? meta.en : meta.bn}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -105,13 +100,10 @@ export function TopCategoriesCard() {
             );
           })}
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full rounded-2xl"
-            onClick={() => setCategoryFilter(undefined)}
-          >
-            {activeCategory ? `Filtered: ${getCategoryMeta(activeCategory).bn}` : "Tap a category to filter"}
+          <Button type="button" variant="outline" className="w-full rounded-2xl" onClick={() => setCategoryFilter(undefined)}>
+            {activeCategory
+              ? `${t("dashboard.filtered")}: ${language === "bn" ? getCategoryMeta(activeCategory).bn : getCategoryMeta(activeCategory).en}`
+              : t("dashboard.tapCategoryFilter")}
           </Button>
         </div>
       </CardContent>

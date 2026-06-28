@@ -9,7 +9,7 @@ import {
   type ReactNode
 } from "react";
 
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark";
 
 type ThemeContextValue = {
   theme: ThemeMode;
@@ -20,48 +20,23 @@ type ThemeContextValue = {
 const STORAGE_KEY = "pocketsense-theme";
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-function resolveTheme(theme: ThemeMode) {
-  if (theme === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-
-  return theme;
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>("light");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    const nextTheme =
-      savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
-        ? savedTheme
-        : "light";
+    const nextTheme = savedTheme === "dark" ? "dark" : "light";
 
     setThemeState(nextTheme);
-    setResolvedTheme(resolveTheme(nextTheme));
+    setResolvedTheme(nextTheme);
   }, []);
 
   useEffect(() => {
-    const appliedTheme = resolveTheme(theme);
-    setResolvedTheme(appliedTheme);
-    document.documentElement.classList.toggle("dark", appliedTheme === "dark");
+    setResolvedTheme(theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    delete document.documentElement.dataset.theme;
     window.localStorage.setItem(STORAGE_KEY, theme);
-
-    if (theme !== "system") {
-      return;
-    }
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => {
-      const nextResolvedTheme = media.matches ? "dark" : "light";
-      setResolvedTheme(nextResolvedTheme);
-      document.documentElement.classList.toggle("dark", nextResolvedTheme === "dark");
-    };
-
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
   }, [theme]);
 
   const value = useMemo<ThemeContextValue>(

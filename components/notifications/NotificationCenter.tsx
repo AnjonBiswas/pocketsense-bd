@@ -12,10 +12,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import {
-  getNotificationDateGroup,
-  type NotificationRecord
-} from "@/lib/notifications/notificationService";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getNotificationDateGroup, type NotificationRecord } from "@/lib/notifications/notificationService";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
 
 type NotificationCenterProps = {
@@ -23,6 +21,7 @@ type NotificationCenterProps = {
 };
 
 export function NotificationCenter({ compact = false }: NotificationCenterProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -93,11 +92,11 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
         <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
           <div className="flex items-center justify-between gap-3">
             <DropdownMenuLabel className="p-0 text-base font-semibold text-slate-900 dark:text-slate-50">
-              Notifications
+              {t("notifications.title")}
             </DropdownMenuLabel>
             <div className="flex items-center gap-2">
               <Button asChild type="button" variant="ghost" size="sm" className="h-8 rounded-full px-3">
-                <Link href="/dashboard/settings/notifications">Settings</Link>
+                <Link href="/dashboard/settings/notifications">{t("notifications.settings")}</Link>
               </Button>
               <Button type="button" variant="ghost" size="sm" className="h-8 w-8 rounded-full px-0" onClick={clearAll}>
                 <Trash2 className="h-4 w-4" />
@@ -105,7 +104,7 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
             </div>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {unreadCount} unread {unreadCount === 1 ? "notification" : "notifications"}
+            {unreadCount} {t("notifications.unread")} {unreadCount === 1 ? t("notifications.notification") : t("notifications.notifications")}
           </p>
         </div>
 
@@ -113,21 +112,21 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
           {isPending && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-              Loading notifications...
+              {t("notifications.loading")}
             </div>
           ) : null}
 
           {!notifications.length && !isPending ? (
             <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center dark:border-slate-700 dark:bg-slate-900/80">
-              <p className="font-medium text-slate-900">সবকিছু শান্ত আছে</p>
-              <p className="mt-1 text-sm text-muted-foreground">নতুন alert এলে এখানে দেখাবে।</p>
+              <p className="font-medium text-slate-900">{t("notifications.allQuiet")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("notifications.allQuietHint")}</p>
               <Button
                 type="button"
                 variant="outline"
                 className="mt-4 rounded-full dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
                 onClick={() => load(true)}
               >
-                Generate sample alerts
+                {t("notifications.generateSample")}
               </Button>
             </div>
           ) : null}
@@ -136,16 +135,10 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
             {Object.entries(groupedNotifications).map(([group, items], index) => (
               <div key={group}>
                 {index > 0 ? <DropdownMenuSeparator className="my-4" /> : null}
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {group}
-                </p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">{group}</p>
                 <div className="space-y-3">
                   {items.map((notification) => (
-                    <NotificationItem
-                      key={notification.id}
-                      notification={notification}
-                      onOpen={handleOpen}
-                    />
+                    <NotificationItem key={notification.id} notification={notification} onOpen={handleOpen} />
                   ))}
                 </div>
               </div>

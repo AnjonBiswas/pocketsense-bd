@@ -120,7 +120,7 @@ export function PreferencesSettingsClient() {
           <div className="space-y-3">
             <p className="font-medium text-slate-900 dark:text-slate-50">Theme</p>
             <div className="flex flex-wrap gap-3">
-              {(["light", "dark", "system"] as const).map((theme) => (
+              {(["light", "dark"] as const).map((theme) => (
                 <Button
                   key={theme}
                   type="button"
