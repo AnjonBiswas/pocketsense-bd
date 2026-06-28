@@ -12,6 +12,7 @@ import {
   subMonths
 } from "date-fns";
 import type { Expense } from "@/store/expenseStore";
+import type { Language } from "@/lib/i18n/translations";
 
 export type ExpenseQueryFilters = {
   startDate?: string;
@@ -149,20 +150,20 @@ export function getPresetRange(preset: "thisWeek" | "thisMonth" | "lastMonth" | 
   };
 }
 
-export function getExpenseGroupLabel(dateString: string) {
+export function getExpenseGroupLabel(dateString: string, language: Language = "en") {
   const date = parseISO(dateString);
 
-  if (isToday(date)) return "Today";
-  if (isYesterday(date)) return "Yesterday";
-  if (isThisWeek(date, { weekStartsOn: 1 })) return "This Week";
-  if (isThisMonth(date)) return "This Month";
+  if (isToday(date)) return language === "bn" ? "আজ" : "Today";
+  if (isYesterday(date)) return language === "bn" ? "গতকাল" : "Yesterday";
+  if (isThisWeek(date, { weekStartsOn: 1 })) return language === "bn" ? "এই সপ্তাহ" : "This week";
+  if (isThisMonth(date)) return language === "bn" ? "এই মাস" : "This month";
 
   return format(date, "MMMM d, yyyy");
 }
 
-export function groupExpensesForDisplay(expenses: Expense[]) {
+export function groupExpensesForDisplay(expenses: Expense[], language: Language = "en") {
   return expenses.reduce<Record<string, Expense[]>>((accumulator, expense) => {
-    const label = getExpenseGroupLabel(expense.date);
+    const label = getExpenseGroupLabel(expense.date, language);
     accumulator[label] = [...(accumulator[label] || []), expense];
     return accumulator;
   }, {});

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { AlertBanner } from "@/components/notifications/AlertBanner";
 
 type DashboardStatsPayload = {
@@ -13,6 +14,7 @@ type DashboardStatsPayload = {
 };
 
 export function NotificationBannerShell() {
+  const { t } = useLanguage();
   const [banner, setBanner] = useState<{
     type: "info" | "warning" | "error" | "success";
     title: string;
@@ -26,8 +28,8 @@ export function NotificationBannerShell() {
         if (payload?.dailyBudget > 0) {
           setBanner({
             type: "info",
-            title: "আজকের বাজেট রিমাইন্ডার",
-            message: `আজ নিরাপদ খরচ সীমা প্রায় ৳${payload.dailyBudget.toFixed(0)}।`
+            title: t("dashboard.budgetReminderTitle"),
+            message: t("dashboard.budgetReminderMessage").replace("{{amount}}", payload.dailyBudget.toFixed(0))
           });
           return;
         }
@@ -41,12 +43,12 @@ export function NotificationBannerShell() {
 
         setBanner({
           type: firstAlert.type,
-          title: firstAlert.title || "PocketSense update",
+          title: firstAlert.title || t("dashboard.updateTitle"),
           message: firstAlert.message
         });
       })
       .catch(() => setBanner(null));
-  }, []);
+  }, [t]);
 
   if (!banner) {
     return null;

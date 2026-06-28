@@ -10,6 +10,7 @@ import {
   useTransition
 } from "react";
 import { Download, RefreshCcw, Search, Trash2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ExpenseFilters } from "@/components/expenses/ExpenseFilters";
 import { ExpenseListItem } from "@/components/expenses/ExpenseListItem";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ type ExpensesPageClientProps = {
 };
 
 export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPageClientProps) {
+  const { language, t } = useLanguage();
   const { filters, draft, setDraft, setPreset, applyFilters, resetFilters, exportQuery } = useExpenseFilters(
     initialMeta.limit || 20
   );
@@ -135,7 +137,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
     return () => observer.disconnect();
   }, [applyFilters, isLoadingMore, isRefreshing, meta.hasMore, meta.page]);
 
-  const groupedExpenses = useMemo(() => groupExpensesForDisplay(expenses), [expenses]);
+  const groupedExpenses = useMemo(() => groupExpensesForDisplay(expenses, language), [expenses, language]);
   const allSelected = expenses.length > 0 && selectedIds.length === expenses.length;
 
   const handleDelete = async (id: string) => {
@@ -185,20 +187,20 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
     >
       <div className="flex justify-center">
         <div
-          className={`rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition ${
+          className={`rounded-full bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition dark:bg-sky-200/95 dark:text-sky-950 ${
             pullDistance > 0 ? "opacity-100" : "opacity-0"
           }`}
         >
-          {pullDistance > 60 ? "Release to refresh" : "Pull to refresh"}
+          {pullDistance > 60 ? t("expenses.releaseToRefresh") : t("expenses.pullToRefresh")}
         </div>
       </div>
 
-      <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur">
+      <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle className="text-2xl">Expense list</CardTitle>
-              <CardDescription>All your spending, filters, exports, and quick cleanup in one place.</CardDescription>
+              <CardTitle className="text-2xl">{t("expenses.title")}</CardTitle>
+              <CardDescription>{t("expenses.description")}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <ExpenseFilters
@@ -216,12 +218,12 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                 disabled={isRefreshing}
               >
                 <RefreshCcw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                Refresh
+                {t("expenses.refresh")}
               </Button>
               <a href={`/api/expenses/export${exportQuery ? `?${exportQuery}` : ""}`}>
                 <Button type="button" variant="outline" className="rounded-full">
                   <Download className="mr-2 h-4 w-4" />
-                  Export CSV
+                  {t("expenses.exportCsv")}
                 </Button>
               </a>
             </div>
@@ -239,7 +241,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                       applyFilters({ search: draft.search });
                     }
                   }}
-                  placeholder="Search by note"
+                  placeholder={t("expenses.searchByNote")}
                   className="pl-11"
                 />
               </div>
@@ -249,11 +251,11 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                 className="rounded-full"
                 onClick={() => applyFilters({ search: draft.search })}
               >
-                Search
+                {t("expenses.search")}
               </Button>
             </div>
             <div className="rounded-3xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border dark:border-emerald-200/70 dark:bg-emerald-100/95 dark:text-emerald-950">
-              Total spent: ৳{meta.totalSpent.toFixed(0)}
+              {t("expenses.totalSpent")}: ৳{meta.totalSpent.toFixed(0)}
             </div>
             <Button
               type="button"
@@ -263,7 +265,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               onClick={handleBulkDelete}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete selected ({selectedIds.length})
+              {t("expenses.deleteSelected")} ({selectedIds.length})
             </Button>
           </div>
         </CardHeader>
@@ -278,7 +280,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               }
               className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
             />
-            Select all on this page
+            {t("expenses.selectAllOnPage")}
           </label>
 
           {isRefreshing ? (
@@ -286,7 +288,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               {Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-20 animate-pulse rounded-[28px] border border-white/50 bg-slate-100 dark:bg-slate-800"
+                  className="h-20 animate-pulse rounded-[28px] border border-white/50 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
                 />
               ))}
             </div>
@@ -297,10 +299,8 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
               <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white text-4xl shadow-sm dark:bg-slate-950 dark:text-slate-50">
                 🧾
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50">No expenses yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Add your first expense and PocketSense will group everything here by time.
-              </p>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50">{t("expenses.noExpensesTitle")}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{t("expenses.noExpensesHint")}</p>
             </div>
           ) : null}
 
@@ -334,7 +334,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
 
           <div className="flex flex-col gap-3 rounded-[28px] bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:bg-slate-900/75">
             <p className="text-sm text-muted-foreground">
-              Page {meta.page} of {meta.totalPages} • {meta.total} expenses
+              {t("expenses.pageSummary")} {meta.page} {t("expenses.of")} {meta.totalPages} • {meta.total} {t("expenses.expensesCount")}
             </p>
             <div className="flex gap-2">
               <Button
@@ -346,7 +346,7 @@ export function ExpensesPageClient({ initialExpenses, initialMeta }: ExpensesPag
                   applyFilters({ page: meta.page + 1 });
                 }}
               >
-                {isLoadingMore ? "Loading..." : "Load more"}
+                {isLoadingMore ? t("expenses.loading") : t("expenses.loadMore")}
               </Button>
             </div>
           </div>

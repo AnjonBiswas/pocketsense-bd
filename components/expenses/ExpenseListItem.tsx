@@ -3,6 +3,7 @@
 import { memo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Pencil, Trash2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Expense } from "@/store/expenseStore";
 import { getCategoryMeta } from "@/lib/utils/categories";
 
@@ -21,6 +22,7 @@ function ExpenseListItemComponent({
   onDelete,
   onEdit
 }: ExpenseListItemProps) {
+  const { language, t } = useLanguage();
   const meta = getCategoryMeta(expense.category);
   const touchStartX = useRef(0);
   const [dragOffset, setDragOffset] = useState(0);
@@ -35,7 +37,7 @@ function ExpenseListItemComponent({
       </div>
 
       <div
-        className="relative flex cursor-pointer items-center gap-3 rounded-[28px] border border-white/60 bg-white/90 px-4 py-4 shadow-sm transition"
+        className="relative flex cursor-pointer items-center gap-3 rounded-[28px] border border-white/60 bg-white/90 px-4 py-4 shadow-sm transition dark:border-slate-700 dark:bg-slate-950/90"
         style={{ transform: `translateX(${dragOffset}px)` }}
         onClick={onEdit}
         onTouchStart={(event) => {
@@ -73,9 +75,11 @@ function ExpenseListItemComponent({
         </div>
 
         <div className="relative z-20 min-w-0 flex-1 text-left">
-          <p className="truncate font-semibold text-slate-900">{expense.note || meta.bn}</p>
+          <p className="truncate font-semibold text-slate-900 dark:text-slate-50">
+            {expense.note || (language === "bn" ? meta.bn : meta.en)}
+          </p>
           <p className="text-xs text-muted-foreground">
-            {meta.bn} • {format(new Date(expense.created_at || expense.date), "dd MMM, hh:mm a")}
+            {language === "bn" ? meta.bn : meta.en} • {format(new Date(expense.created_at || expense.date), "dd MMM, hh:mm a")}
           </p>
         </div>
 
@@ -84,23 +88,23 @@ function ExpenseListItemComponent({
           <div className="hidden gap-2 md:flex">
             <button
               type="button"
-              className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
+              className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-200/95 dark:text-emerald-950"
               onClick={(event) => {
                 event.stopPropagation();
                 onEdit();
               }}
             >
-              Edit
+              {t("expenses.edit")}
             </button>
             <button
               type="button"
-              className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
+              className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 dark:bg-rose-200/95 dark:text-rose-950"
               onClick={(event) => {
                 event.stopPropagation();
                 onDelete();
               }}
             >
-              Delete
+              {t("expenses.delete")}
             </button>
           </div>
         </div>

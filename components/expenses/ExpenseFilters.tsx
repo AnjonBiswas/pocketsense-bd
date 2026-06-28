@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { Filter, RotateCcw } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,55 +19,52 @@ type ExpenseFiltersProps = {
   onReset: () => void;
 };
 
-const presets: Array<{ key: FilterPreset; label: string }> = [
-  { key: "thisWeek", label: "This week" },
-  { key: "thisMonth", label: "This month" },
-  { key: "lastMonth", label: "Last month" },
-  { key: "custom", label: "Custom" }
-];
+const presetKeys: FilterPreset[] = ["thisWeek", "thisMonth", "lastMonth", "custom"];
 
 export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }: ExpenseFiltersProps) {
+  const { language, t } = useLanguage();
+
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" className="rounded-full">
           <Filter className="mr-2 h-4 w-4" />
-          Filters
+          {t("expenses.filters")}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(92vw,420px)] space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-lg font-semibold">Filter expenses</p>
-            <p className="text-sm text-muted-foreground">Date, category, amount, আর note দিয়ে refine করুন।</p>
+            <p className="text-lg font-semibold">{t("expenses.filterExpenses")}</p>
+            <p className="text-sm text-muted-foreground">{t("expenses.filterHint")}</p>
           </div>
           <Button type="button" variant="ghost" size="sm" className="rounded-full" onClick={onReset}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Reset
+            {t("expenses.reset")}
           </Button>
         </div>
 
         <div className="space-y-3">
-          <Label>Date range</Label>
+          <Label>{t("expenses.dateRange")}</Label>
           <div className="grid grid-cols-2 gap-2">
-            {presets.map((preset) => (
+            {presetKeys.map((preset) => (
               <button
-                key={preset.key}
+                key={preset}
                 type="button"
                 className={`rounded-2xl border px-3 py-2 text-sm transition ${
-                  draft.preset === preset.key
+                  draft.preset === preset
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                    : "border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                 }`}
                 onClick={() => {
-                  setPreset(preset.key);
-                  if (preset.key !== "custom") {
-                    const range = getPresetRange(preset.key);
-                    setDraft((current) => ({ ...current, preset: preset.key, ...range }));
+                  setPreset(preset);
+                  if (preset !== "custom") {
+                    const range = getPresetRange(preset);
+                    setDraft((current) => ({ ...current, preset, ...range }));
                   }
                 }}
               >
-                {preset.label}
+                {t(`expenses.${preset}`)}
               </button>
             ))}
           </div>
@@ -97,7 +95,7 @@ export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }:
         </div>
 
         <div className="space-y-3">
-          <Label>Categories</Label>
+          <Label>{t("expenses.categories")}</Label>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(CATEGORIES).map(([key, value]) => {
               const active = draft.categories.includes(key);
@@ -108,7 +106,7 @@ export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }:
                   className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 transition ${
                     active
                       ? "border-primary bg-primary/10"
-                      : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                      : "border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                   }`}
                 >
                   <input
@@ -125,7 +123,7 @@ export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }:
                     className="sr-only"
                   />
                   <span className="text-lg">{value.icon}</span>
-                  <span className="text-sm font-medium">{value.bn}</span>
+                  <span className="text-sm font-medium">{language === "bn" ? value.bn : value.en}</span>
                 </label>
               );
             })}
@@ -133,19 +131,19 @@ export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }:
         </div>
 
         <div className="space-y-3">
-          <Label>Amount range</Label>
+          <Label>{t("expenses.amountRange")}</Label>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               type="number"
               min="0"
-              placeholder="Min"
+              placeholder={t("expenses.min")}
               value={draft.minAmount}
               onChange={(event) => setDraft((current) => ({ ...current, minAmount: event.target.value }))}
             />
             <Input
               type="number"
               min="0"
-              placeholder="Max"
+              placeholder={t("expenses.max")}
               value={draft.maxAmount}
               onChange={(event) => setDraft((current) => ({ ...current, maxAmount: event.target.value }))}
             />
@@ -162,10 +160,10 @@ export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }:
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="expense-search">Search note</Label>
+          <Label htmlFor="expense-search">{t("expenses.searchNote")}</Label>
           <Input
             id="expense-search"
-            placeholder="e.g. tea, bus fare"
+            placeholder={t("expenses.searchExample")}
             value={draft.search}
             onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))}
           />
@@ -173,10 +171,10 @@ export function ExpenseFilters({ draft, setDraft, setPreset, onApply, onReset }:
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" className="rounded-full" onClick={onReset}>
-            Reset
+            {t("expenses.reset")}
           </Button>
           <Button type="button" className="rounded-full" onClick={onApply}>
-            Apply filters
+            {t("expenses.applyFilters")}
           </Button>
         </div>
       </PopoverContent>

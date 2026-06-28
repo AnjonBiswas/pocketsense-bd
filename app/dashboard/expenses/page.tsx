@@ -1,7 +1,7 @@
 import { ExpensesPageClient } from "@/components/expenses/ExpensesPageClient";
 import { createServerComponentClient } from "@/lib/supabase/server";
 import { fetchPaginatedExpenses } from "@/lib/supabase/queries";
-import { FALLBACK_EXPENSES, applyExpenseFilters, normalizeExpense, paginateExpenses, type ExpenseQueryFilters } from "@/lib/utils/expenses";
+import { normalizeExpense, type ExpenseQueryFilters } from "@/lib/utils/expenses";
 
 type ExpensesPageProps = {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -35,19 +35,16 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
     } = await supabase.auth.getUser();
 
     if (!user) {
-      const filtered = applyExpenseFilters(FALLBACK_EXPENSES, filters);
-      const paginated = paginateExpenses(filtered, filters.page, filters.limit);
-
       return (
         <ExpensesPageClient
-          initialExpenses={paginated.data}
+          initialExpenses={[]}
           initialMeta={{
-            page: paginated.page,
-            limit: paginated.limit,
-            total: paginated.total,
-            totalPages: paginated.totalPages,
-            hasMore: paginated.hasMore,
-            totalSpent: filtered.reduce((sum, expense) => sum + expense.amount, 0)
+            page: filters.page || 1,
+            limit: filters.limit || 20,
+            total: 0,
+            totalPages: 1,
+            hasMore: false,
+            totalSpent: 0
           }}
         />
       );
@@ -62,19 +59,16 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
       />
     );
   } catch {
-    const filtered = applyExpenseFilters(FALLBACK_EXPENSES, filters);
-    const paginated = paginateExpenses(filtered, filters.page, filters.limit);
-
     return (
       <ExpensesPageClient
-        initialExpenses={paginated.data}
+        initialExpenses={[]}
         initialMeta={{
-          page: paginated.page,
-          limit: paginated.limit,
-          total: paginated.total,
-          totalPages: paginated.totalPages,
-          hasMore: paginated.hasMore,
-          totalSpent: filtered.reduce((sum, expense) => sum + expense.amount, 0)
+          page: filters.page || 1,
+          limit: filters.limit || 20,
+          total: 0,
+          totalPages: 1,
+          hasMore: false,
+          totalSpent: 0
         }}
       />
     );

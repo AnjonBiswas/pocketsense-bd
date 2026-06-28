@@ -1,4 +1,7 @@
+"use client";
+
 import { AlertCircle, BellRing, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type AlertItem = {
@@ -30,10 +33,12 @@ const alertStyles = {
 } as const;
 
 export function AlertsCard({ alerts }: AlertsCardProps) {
+  const { t } = useLanguage();
+
   return (
-    <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur">
+    <Card className="border-white/60 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
       <CardHeader>
-        <CardTitle className="text-lg">Smart alerts</CardTitle>
+        <CardTitle className="text-lg">{t("dashboard.smartAlerts")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {alerts.map((alert) => {
