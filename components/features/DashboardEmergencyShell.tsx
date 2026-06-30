@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { AlertBanner } from "@/components/notifications/AlertBanner";
 import { SOSMode } from "@/components/features/SOSMode";
 import { SOSModeActive } from "@/components/features/SOSModeActive";
 import { useExpenseStore } from "@/store/expenseStore";
@@ -21,11 +22,13 @@ type SOSPayload = {
   hasPin: boolean;
   complianceScore: number;
   luxuryWarning: string | null;
+  periodKey?: string;
 };
 
 export function DashboardEmergencyShell() {
   const [state, setState] = useState<SOSPayload | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const showToast = useExpenseStore((store) => store.showToast);
 
   const load = () => {
@@ -42,8 +45,34 @@ export function DashboardEmergencyShell() {
   };
 
   useEffect(() => {
+    if (!state?.periodKey || typeof window === "undefined") {
+      return;
+    }
+
+    const stored = window.localStorage.getItem(`pocketsense-sos-dismissed:${state.periodKey}`);
+    setDismissedKey(stored === "1" ? state.periodKey : null);
+  }, [state?.periodKey]);
+
+  useEffect(() => {
     load();
   }, []);
+
+  const isModalSuppressed = useMemo(() => {
+    if (!state?.periodKey) {
+      return false;
+    }
+
+    return dismissedKey === state.periodKey;
+  }, [dismissedKey, state?.periodKey]);
+
+  function dismissForPeriod() {
+    if (!state?.periodKey || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(`pocketsense-sos-dismissed:${state.periodKey}`, "1");
+    setDismissedKey(state.periodKey);
+  }
 
   async function deactivateSOSMode() {
     const response = await fetch("/api/sos", {
@@ -68,6 +97,7 @@ export function DashboardEmergencyShell() {
       type: "success",
       message: "Survival mode updated."
     });
+    dismissForPeriod();
     load();
   }
 
@@ -76,6 +106,7 @@ export function DashboardEmergencyShell() {
       type: "success",
       message: "Survival mode activated. Your budget is protected."
     });
+    dismissForPeriod();
     load();
   }
 
@@ -83,10 +114,24 @@ export function DashboardEmergencyShell() {
     return null;
   }
 
+  const showCriticalModal =
+    Boolean(state?.shouldActivate) && state?.severity === "critical" && !isModalSuppressed;
+  const showWarningBanner =
+    Boolean(state?.shouldActivate) && state?.severity === "warning" && !isModalSuppressed;
+
   return (
     <>
-      {state ? <SOSModeActive state={state} onDeactivate={deactivateSOSMode} /> : null}
-      {state ? <SOSMode state={state} onActivated={refreshAfterActivation} /> : null}
+      {state?.isActive ? <SOSModeActive state={state} onDeactivate={deactivateSOSMode} /> : null}
+      {showWarningBanner ? (
+        <AlertBanner
+          type="warning"
+          title="Emergency budget alert"
+          message="Your budget is tight for this period. Survival Mode is available if you want to protect the month-end balance."
+        />
+      ) : null}
+      {showCriticalModal ? (
+        <SOSMode state={state} onActivated={refreshAfterActivation} onDismiss={dismissForPeriod} />
+      ) : null}
     </>
   );
 }

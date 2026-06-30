@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
-import { getFallbackSquadMembers } from "@/lib/utils/squads";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim() || "";
@@ -10,17 +10,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "squad-member-search",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      const fallback = getFallbackSquadMembers().filter(
-        (member) => member.phone?.includes(query) || member.name?.toLowerCase().includes(query.toLowerCase())
-      );
-      return NextResponse.json({ members: fallback });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("profiles")
@@ -36,9 +36,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ members: data || [] });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to search members." },
+      { error: getSafeErrorMessage(error, "Failed to search members.") },
       { status: 500 }
     );
   }
 }
-

@@ -1,46 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { normalizeExpense } from "@/lib/utils/expenses";
 import { CATEGORIES } from "@/lib/utils/categories";
+import { isValidDateString, parsePositiveAmount, sanitizeNote } from "@/lib/utils/sanitize";
 
-function validateExpensePayload(body: Record<string, unknown>) {
-  const amount = Number(body.amount);
-  const category = body.category as keyof typeof CATEGORIES;
-  const note = typeof body.note === "string" ? body.note.trim() : null;
-  const date = typeof body.date === "string" ? body.date : "";
+const expenseCategoryKeys = Object.keys(CATEGORIES) as [
+  keyof typeof CATEGORIES,
+  ...Array<keyof typeof CATEGORIES>
+];
 
-  if (!amount || amount <= 0) {
-    return { error: "Amount must be greater than zero." };
-  }
-
-  if (!category || !(category in CATEGORIES)) {
-    return { error: "Invalid category." };
-  }
-
-  if (!date) {
-    return { error: "Date is required." };
-  }
-
-  return {
-    value: {
-      amount,
-      category,
-      note,
-      date
-    }
-  };
-}
+const expenseSchema = z.object({
+  amount: z.union([z.number(), z.string()]).transform((value) => parsePositiveAmount(value)).refine(
+    (value): value is number => value !== null,
+    { message: "Amount must be greater than zero." }
+  ),
+  category: z.enum(expenseCategoryKeys),
+  note: z.union([z.string(), z.null(), z.undefined()]).transform((value) => sanitizeNote(value ?? "", 280)).optional(),
+  date: z.string().refine((value) => isValidDateString(value), {
+    message: "Date is required."
+  })
+});
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(_request, {
+      rateLimitKey: "expenses-single",
+      limit: 120,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("expenses")
@@ -50,13 +45,13 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
+      return NextResponse.json({ error: "Expense not found." }, { status: 404 });
     }
 
     return NextResponse.json({ expense: normalizeExpense(data) });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch expense." },
+      { error: getSafeErrorMessage(error, "Failed to fetch expense.") },
       { status: 500 }
     );
   }
@@ -69,38 +64,49 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const validation = validateExpensePayload(body);
+  const parsed = expenseSchema.safeParse(body);
 
-  if ("error" in validation) {
-    return NextResponse.json({ error: validation.error }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message || "Invalid expense data." },
+      { status: 400 }
+    );
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "expenses-update",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("expenses")
-      .update(validation.value)
+      .update({
+        amount: parsed.data.amount,
+        category: parsed.data.category,
+        note: parsed.data.note || null,
+        date: parsed.data.date
+      })
       .eq("id", params.id)
       .eq("user_id", user.id)
       .select("id, amount, category, note, date, created_at")
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not update expense." }, { status: 400 });
     }
 
     return NextResponse.json({ expense: normalizeExpense(data) });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update expense." },
+      { error: getSafeErrorMessage(error, "Failed to update expense.") },
       { status: 500 }
     );
   }
@@ -108,27 +114,29 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(_request, {
+      rateLimitKey: "expenses-delete-single",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { error } = await supabase.from("expenses").delete().eq("id", params.id).eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not delete expense." }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete expense." },
+      { error: getSafeErrorMessage(error, "Failed to delete expense.") },
       { status: 500 }
     );
   }
 }
-

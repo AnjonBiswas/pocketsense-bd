@@ -1,8 +1,10 @@
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
-import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
+import { applyCacheHeaders } from "@/lib/middleware/cache";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { getSOSState } from "@/lib/sos/get-sos-state";
-import { createRouteHandlerClient, hasSupabaseEnv } from "@/lib/supabase/server";
+import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { generateAlerts } from "@/lib/utils/alerts";
 import type { DebtRecord, ReminderRecord } from "@/lib/utils/alerts";
 import { getCategoryMeta } from "@/lib/utils/categories";
@@ -22,47 +24,6 @@ const emptyUserStats = {
   spentToday: 0,
   entriesToday: 0
 };
-
-async function buildEmptyAuthenticatedResponse(
-  supabase: ReturnType<typeof createRouteHandlerClient>,
-  userId: string | undefined,
-  daysElapsed: number,
-  daysInMonth: number,
-  daysRemaining: number
-) {
-  const sos = await getSOSState(supabase, userId).catch(() => ({
-    shouldActivate: false,
-    severity: "warning" as const,
-    isActive: false,
-    remainingBudget: 0,
-    daysRemaining,
-    dailyBudget: 0,
-    activatedTips: [],
-    projectedSavings: 0,
-    canSurvive: true,
-    survivalTarget: 100,
-    hasLockedFunds: false,
-    lockedAmount: 0,
-    hasPin: false,
-    complianceScore: 0,
-    luxuryWarning: null
-  }));
-
-  return applyCacheHeaders(
-    NextResponse.json({
-      ...emptyUserStats,
-      daysElapsed,
-      daysInMonth,
-      daysRemaining,
-      dailyBudget: 0,
-      remainingBudget: 0,
-      topCategories: [],
-      alerts: [],
-      sos
-    }),
-    { maxAge: 20, staleWhileRevalidate: 120 }
-  );
-}
 
 async function fetchOptionalTableRows<TTable extends keyof Database["public"]["Tables"]>(
   supabase: ReturnType<typeof createRouteHandlerClient>,
@@ -95,58 +56,18 @@ export async function GET(request: NextRequest) {
   const daysElapsed = today.getDate();
   const daysRemaining = Math.max(daysInMonth - daysElapsed, 1);
 
-  if (!hasSupabaseEnv()) {
-    return applyCacheHeaders(
-      NextResponse.json({
-        ...emptyUserStats,
-        daysElapsed,
-        daysInMonth,
-        daysRemaining,
-        dailyBudget: 0,
-        remainingBudget: 0,
-        topCategories: [],
-        alerts: [],
-        sos: {
-          shouldActivate: false,
-          severity: "warning" as const,
-          isActive: false,
-          remainingBudget: 0,
-          daysRemaining,
-          dailyBudget: 0,
-          activatedTips: [],
-          projectedSavings: 0,
-          canSurvive: true,
-          survivalTarget: 100,
-          hasLockedFunds: false,
-          lockedAmount: 0,
-          hasPin: false,
-          complianceScore: 0,
-          luxuryWarning: null
-        }
-      }),
-      { maxAge: 20, staleWhileRevalidate: 120 }
-    );
-  }
-
   try {
-    const rateLimited = enforceRateLimit(request, {
-      key: "dashboard-stats",
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "dashboard-stats",
       limit: 90,
       windowMs: 60_000
     });
 
-    if (rateLimited) {
-      return rateLimited;
+    if (auth.error) {
+      return auth.error;
     }
 
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return buildEmptyAuthenticatedResponse(supabase, undefined, daysElapsed, daysInMonth, daysRemaining);
-    }
+    const { supabase, user } = auth;
 
     const [{ data: incomes }, { data: expenses }, { data: budget }, { data: challenges }, reminders, debts] =
       await Promise.all([
@@ -286,15 +207,10 @@ export async function GET(request: NextRequest) {
       }),
       { maxAge: 20, staleWhileRevalidate: 120 }
     );
-  } catch {
-    const supabase = createRouteHandlerClient();
-    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-    const user = authResult.data.user;
-
-    if (user) {
-      return buildEmptyAuthenticatedResponse(supabase, user.id, daysElapsed, daysInMonth, daysRemaining);
-    }
-
-    return buildEmptyAuthenticatedResponse(supabase, undefined, daysElapsed, daysInMonth, daysRemaining);
+  } catch (error) {
+    return NextResponse.json(
+      { error: getSafeErrorMessage(error, "Failed to load dashboard stats.") },
+      { status: 500 }
+    );
   }
 }

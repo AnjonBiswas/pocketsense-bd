@@ -15,9 +15,10 @@ type SOSModeProps = {
     daysRemaining: number;
   };
   onActivated: () => Promise<void> | void;
+  onDismiss: () => Promise<void> | void;
 };
 
-export function SOSMode({ state, onActivated }: SOSModeProps) {
+export function SOSMode({ state, onActivated, onDismiss }: SOSModeProps) {
   const [selectedTips, setSelectedTips] = useState<string[]>(["cook_home", "walk"]);
   const [friendName, setFriendName] = useState("");
   const [lockedAmount, setLockedAmount] = useState(0);
@@ -191,7 +192,10 @@ export function SOSMode({ state, onActivated }: SOSModeProps) {
                   type="button"
                   variant="outline"
                   className="rounded-full border-orange-300 bg-white/80 text-slate-700"
-                  onClick={() => setAcknowledged(true)}
+                  onClick={() => {
+                    setAcknowledged(true);
+                    void onDismiss();
+                  }}
                 >
                   I understand, remind me later
                 </Button>

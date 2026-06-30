@@ -1,6 +1,6 @@
 # PocketSense Auth Setup Guide
 
-This guide explains how to set up the new free authentication system for PocketSense BD.
+This guide explains how to set up the new free authentication system for PocketSense.
 
 The app now uses:
 

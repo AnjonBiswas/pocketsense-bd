@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { calculateSettlements } from "@/lib/utils/splitCalculator";
 import {
   applySettlementHistory,
-  getFallbackSettlementHistory,
-  getFallbackSquadExpenses,
-  getFallbackSquadMembers,
-  getFallbackSquads,
   mapExpensesForSettlementCalculation,
   normalizeSquad,
   normalizeSquadExpense,
@@ -72,41 +70,26 @@ async function buildSquadSummaries(
   });
 }
 
-function getFallbackSquadSummaries(): SquadCardSummary[] {
-  const squads = getFallbackSquads();
-  const members = getFallbackSquadMembers();
-  const expenses = getFallbackSquadExpenses();
-  const history = getFallbackSettlementHistory();
-
-  return squads.map((squad) => {
-    const squadExpenses = expenses.filter((expense) => expense.squad_id === squad.id);
-    return {
-      squad,
-      members: members.filter((member) => squad.members.includes(member.id)),
-      pendingSettlements: applySettlementHistory(
-        calculateSettlements(mapExpensesForSettlementCalculation(squadExpenses)),
-        history.filter((item) => item.squad_id === squad.id)
-      ),
-      lastActivity: squadExpenses[0]?.created_at || squad.created_at
-    };
-  });
-}
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "squads-list",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ squads: getFallbackSquadSummaries(), currentUserId: "user-demo-1" });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const squads = await buildSquadSummaries(supabase, user.id);
     return NextResponse.json({ squads, currentUserId: user.id });
-  } catch {
-    return NextResponse.json({ squads: getFallbackSquadSummaries(), currentUserId: "user-demo-1" });
+  } catch (error) {
+    return NextResponse.json(
+      { error: getSafeErrorMessage(error, "Failed to load squads.") },
+      { status: 500 }
+    );
   }
 }
 
@@ -120,14 +103,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "squads-create",
+      limit: 20,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const members = [...new Set([user.id, ...(body.memberIds || [])])];
     const { data, error } = await supabase
@@ -147,9 +133,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ squad: normalizeSquad(data) });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create squad." },
+      { error: getSafeErrorMessage(error, "Failed to create squad.") },
       { status: 500 }
     );
   }
 }
-

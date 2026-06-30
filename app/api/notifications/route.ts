@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import {
   filterNotificationsByPreference,
@@ -6,29 +8,6 @@ import {
 } from "@/lib/notifications/notificationService";
 import { getSOSState } from "@/lib/sos/get-sos-state";
 import type { DebtRecord, ReminderRecord } from "@/lib/utils/alerts";
-
-const FALLBACK_NOTIFICATIONS = [
-  {
-    id: "fallback-1",
-    user_id: "guest",
-    type: "daily_budget" as const,
-    title: "আজকের বাজেট রিমাইন্ডার",
-    message: "আজ নিরাপদ খরচ সীমা প্রায় ৳450।",
-    read: false,
-    action_url: "/dashboard",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "fallback-2",
-    user_id: "guest",
-    type: "overspending" as const,
-    title: "খরচ একটু বেশি হচ্ছে",
-    message: "ক্যাফে আর transport এ খরচ এই সপ্তাহে বেশি।",
-    read: false,
-    action_url: "/dashboard/reports",
-    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString()
-  }
-];
 
 async function readOptionalRows(
   supabase: ReturnType<typeof createRouteHandlerClient>,
@@ -58,18 +37,17 @@ export async function GET(request: NextRequest) {
   const shouldSeed = request.nextUrl.searchParams.get("seed") === "true";
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "notifications-list",
+      limit: 90,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({
-        notifications: FALLBACK_NOTIFICATIONS,
-        unreadCount: FALLBACK_NOTIFICATIONS.filter((item) => !item.read).length
-      });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const [{ data: notifications }, { data: preference }] = await Promise.all([
       supabase
         .from("notifications")
@@ -163,7 +141,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to fetch notifications."
+        error: getSafeErrorMessage(error, "Failed to fetch notifications.")
       },
       { status: 500 }
     );
@@ -178,15 +156,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "notifications-update",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const { error } = await supabase
       .from("notifications")
       .update({ read: true })
@@ -194,44 +174,47 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not update notification." }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to update notification."
+        error: getSafeErrorMessage(error, "Failed to update notification.")
       },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "notifications-clear",
+      limit: 20,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const { error } = await supabase.from("notifications").delete().eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not clear notifications." }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to clear notifications."
+        error: getSafeErrorMessage(error, "Failed to clear notifications.")
       },
       { status: 500 }
     );
   }
 }
+

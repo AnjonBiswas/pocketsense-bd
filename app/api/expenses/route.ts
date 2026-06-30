@@ -1,31 +1,39 @@
 import { endOfMonth, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
-import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
+import { z } from "zod";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { applyCacheHeaders } from "@/lib/middleware/cache";
 import { getSOSState, hashPIN } from "@/lib/sos/get-sos-state";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { fetchPaginatedExpenses } from "@/lib/supabase/queries";
 import { calculateDailyBudget } from "@/lib/utils/budget";
 import { isLuxuryCategory } from "@/lib/utils/sosMode";
+import { getSafeErrorMessage } from "@/lib/security/errors";
+import { isValidDateString, parsePositiveAmount, sanitizeNote, sanitizeSearchQuery } from "@/lib/utils/sanitize";
 import {
   normalizeExpense,
   type ExpenseQueryFilters
 } from "@/lib/utils/expenses";
 import { CATEGORIES } from "@/lib/utils/categories";
 
-function buildFallbackStats(totalExpenses: number) {
-  const totalIncome = 18000;
-  const fixedExpenses = 3200;
-  const savingsGoal = 3000;
-  const monthLimit = 12000;
-  const today = new Date();
-  const daysRemaining = Math.max(endOfMonth(today).getDate() - today.getDate(), 1);
+const expenseCategoryKeys = Object.keys(CATEGORIES) as [
+  keyof typeof CATEGORIES,
+  ...Array<keyof typeof CATEGORIES>
+];
 
-  return {
-    dailyBudget: calculateDailyBudget(totalIncome, fixedExpenses, totalExpenses, savingsGoal, daysRemaining),
-    totalExpenses,
-    remainingBudget: Math.max(monthLimit - totalExpenses, 0)
-  };
-}
+const expenseSchema = z.object({
+  amount: z.union([z.number(), z.string()]).transform((value) => parsePositiveAmount(value)).refine(
+    (value): value is number => value !== null,
+    { message: "Amount must be greater than zero." }
+  ),
+  category: z.enum(expenseCategoryKeys),
+  note: z.union([z.string(), z.null(), z.undefined()]).transform((value) => sanitizeNote(value ?? "", 280)).optional(),
+  date: z.string().refine((value) => isValidDateString(value), {
+    message: "Date is required."
+  }),
+  overrideEmergency: z.boolean().optional(),
+  unlockPin: z.string().optional()
+});
 
 async function calculateUpdatedStats(userId: string, supabase: ReturnType<typeof createRouteHandlerClient>) {
   const today = new Date();
@@ -73,7 +81,8 @@ function parseFilters(request: NextRequest): ExpenseQueryFilters {
     .map((item) => item.trim())
     .filter(Boolean);
   const fallbackCategory = request.nextUrl.searchParams.get("category");
-  const search = request.nextUrl.searchParams.get("search") || undefined;
+  const searchParam = request.nextUrl.searchParams.get("search");
+  const search = searchParam ? sanitizeSearchQuery(searchParam) || undefined : undefined;
   const minAmountValue = request.nextUrl.searchParams.get("minAmount");
   const maxAmountValue = request.nextUrl.searchParams.get("maxAmount");
   const pageValue = request.nextUrl.searchParams.get("page");
@@ -91,34 +100,6 @@ function parseFilters(request: NextRequest): ExpenseQueryFilters {
   };
 }
 
-function validateExpensePayload(body: Record<string, unknown>) {
-  const amount = Number(body.amount);
-  const category = body.category as keyof typeof CATEGORIES;
-  const note = typeof body.note === "string" ? body.note.trim() : null;
-  const date = typeof body.date === "string" ? body.date : "";
-
-  if (!amount || amount <= 0) {
-    return { error: "Amount must be greater than zero." };
-  }
-
-  if (!category || !(category in CATEGORIES)) {
-    return { error: "Invalid category." };
-  }
-
-  if (!date) {
-    return { error: "Date is required." };
-  }
-
-  return {
-    value: {
-      amount,
-      category,
-      note,
-      date
-    }
-  };
-}
-
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
 
@@ -126,36 +107,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const validation = validateExpensePayload(body);
+  const parsed = expenseSchema.safeParse(body);
 
-  if ("error" in validation) {
-    return NextResponse.json({ error: validation.error }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message || "Invalid expense data." },
+      { status: 400 }
+    );
   }
 
+  const auth = await requireApiUser(request, {
+    rateLimitKey: "expenses-create",
+    limit: 30,
+    windowMs: 60_000
+  });
+
+  if (auth.error) {
+    return auth.error;
+  }
+
+  const { supabase, user } = auth;
+
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      const expense = {
-        id: `guest-${Date.now()}`,
-        ...validation.value,
-        created_at: new Date().toISOString()
-      };
-
-      return NextResponse.json({
-        expense,
-        stats: buildFallbackStats(6750 + expense.amount)
-      });
-    }
+    const validation = parsed.data;
 
     const sosState = await getSOSState(supabase, user.id);
-    const overrideEmergency = Boolean(body.overrideEmergency);
-    const unlockPin = typeof body.unlockPin === "string" ? body.unlockPin : "";
+    const overrideEmergency = Boolean(validation.overrideEmergency);
+    const unlockPin = validation.unlockPin || "";
 
-    if (sosState.isActive && isLuxuryCategory(validation.value.category)) {
+    if (sosState.isActive && isLuxuryCategory(validation.category)) {
       if (sosState.hasPin) {
         const { data: sosRecord } = await supabase
           .from("sos_modes")
@@ -189,14 +169,17 @@ export async function POST(request: NextRequest) {
     const { data: expense, error } = await supabase
       .from("expenses")
       .insert({
-        ...validation.value,
+        amount: validation.amount,
+        category: validation.category,
+        note: validation.note || null,
+        date: validation.date,
         user_id: user.id
       })
       .select("id, amount, category, note, date, created_at")
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not create expense." }, { status: 400 });
     }
 
     const stats = await calculateUpdatedStats(user.id, supabase);
@@ -210,7 +193,7 @@ export async function POST(request: NextRequest) {
       const currentScore = Number(currentMode?.compliance_score || 0);
       const nextScore = Math.max(
         0,
-        Math.min(100, currentScore + (isLuxuryCategory(validation.value.category) ? -20 : 8))
+        Math.min(100, currentScore + (isLuxuryCategory(validation.category) ? -20 : 8))
       );
 
       await supabase
@@ -227,50 +210,27 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create expense." },
+      { error: getSafeErrorMessage(error, "Failed to create expense.") },
       { status: 500 }
     );
   }
 }
 
 export async function GET(request: NextRequest) {
-  const rateLimited = enforceRateLimit(request, {
-    key: "expenses-list",
-    limit: 120,
-    windowMs: 60_000
-  });
-
-  if (rateLimited) {
-    return rateLimited;
-  }
-
   const filters = parseFilters(request);
-  let hasAuthenticatedUser = false;
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "expenses-list",
+      limit: 120,
+      windowMs: 60_000
+    });
 
-    hasAuthenticatedUser = Boolean(user);
-
-    if (!user) {
-      return applyCacheHeaders(
-        NextResponse.json({
-          expenses: [],
-          meta: {
-            page: filters.page,
-            limit: filters.limit,
-            total: 0,
-            totalPages: 1,
-            hasMore: false,
-            totalSpent: 0
-          }
-        }),
-        { maxAge: 15, staleWhileRevalidate: 60 }
-      );
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const result = await fetchPaginatedExpenses(supabase, user.id, filters);
 
@@ -282,22 +242,8 @@ export async function GET(request: NextRequest) {
       { maxAge: 15, staleWhileRevalidate: 60 }
     );
   } catch (error) {
-    if (hasAuthenticatedUser) {
-      return NextResponse.json({
-        expenses: [],
-        meta: {
-          page: filters.page,
-          limit: filters.limit,
-          total: 0,
-          totalPages: 1,
-          hasMore: false,
-          totalSpent: 0
-        }
-      });
-    }
-
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch expenses." },
+      { error: getSafeErrorMessage(error, "Failed to fetch expenses.") },
       { status: 500 }
     );
   }
@@ -317,19 +263,21 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "expenses-delete",
+      limit: 25,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const { error } = await supabase.from("expenses").delete().in("id", targetIds).eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not delete expense." }, { status: 400 });
     }
 
     const stats = await calculateUpdatedStats(user.id, supabase);
@@ -337,7 +285,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true, stats, deletedIds: targetIds });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete expense." },
+      { error: getSafeErrorMessage(error, "Failed to delete expense.") },
       { status: 500 }
     );
   }

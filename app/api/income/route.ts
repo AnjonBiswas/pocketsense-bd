@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import {
   type IncomeRecord,
@@ -8,8 +11,20 @@ import {
   getIncomeBySource,
   predictNextIncome
 } from "@/lib/utils/income";
+import { isValidDateString, parsePositiveAmount, sanitizeNote } from "@/lib/utils/sanitize";
 
-const VALID_SOURCES = new Set(Object.keys(INCOME_SOURCES));
+const incomeSchema = z.object({
+  amount: z.union([z.number(), z.string()]).transform((value) => parsePositiveAmount(value)).refine(
+    (value): value is number => value !== null,
+    { message: "Amount must be greater than zero." }
+  ),
+  source: z.enum(Object.keys(INCOME_SOURCES) as [keyof typeof INCOME_SOURCES, ...Array<keyof typeof INCOME_SOURCES>]),
+  date: z.string().refine((value) => isValidDateString(value), {
+    message: "Date is required."
+  }),
+  note: z.union([z.string(), z.null(), z.undefined()]).transform((value) => sanitizeNote(value ?? "", 280)).optional(),
+  is_recurring: z.boolean().optional()
+});
 
 function normalizeIncomeRows(rows: Array<Record<string, unknown>> = []): IncomeRecord[] {
   return rows.map((row) => ({
@@ -21,41 +36,6 @@ function normalizeIncomeRows(rows: Array<Record<string, unknown>> = []): IncomeR
     is_recurring: Boolean(row.is_recurring),
     created_at: String(row.created_at)
   }));
-}
-
-function buildGuestIncomes(): IncomeRecord[] {
-  const today = new Date();
-  const month = today.toISOString().slice(0, 7);
-
-  return [
-    {
-      id: "guest-income-1",
-      amount: 6000,
-      source: "allowance",
-      date: `${month}-02`,
-      note: "Monthly allowance",
-      is_recurring: true,
-      created_at: today.toISOString()
-    },
-    {
-      id: "guest-income-2",
-      amount: 4500,
-      source: "tuition",
-      date: `${month}-10`,
-      note: "Student: Arafat",
-      is_recurring: true,
-      created_at: today.toISOString()
-    },
-    {
-      id: "guest-income-3",
-      amount: 3200,
-      source: "freelance",
-      date: `${month}-18`,
-      note: "Landing page fix",
-      is_recurring: false,
-      created_at: today.toISOString()
-    }
-  ];
 }
 
 function buildIncomeResponse(incomes: IncomeRecord[]) {
@@ -78,37 +58,11 @@ function buildIncomeResponse(incomes: IncomeRecord[]) {
   };
 }
 
-function validateIncomePayload(body: Record<string, unknown>) {
-  const amount = Number(body.amount);
-  const source = typeof body.source === "string" ? body.source : "";
-  const date = typeof body.date === "string" ? body.date : "";
-  const note = typeof body.note === "string" ? body.note.trim() : null;
-  const is_recurring = Boolean(body.is_recurring);
-
-  if (!amount || amount <= 0) {
-    return { error: "Amount must be greater than zero." };
-  }
-
-  if (!VALID_SOURCES.has(source)) {
-    return { error: "Invalid income source." };
-  }
-
-  if (!date) {
-    return { error: "Date is required." };
-  }
-
-  return {
-    value: {
-      amount,
-      source,
-      date,
-      note,
-      is_recurring
-    }
-  };
-}
-
-async function fetchUserIncomes(userId: string, request: NextRequest, supabase: ReturnType<typeof createRouteHandlerClient>) {
+async function fetchUserIncomes(
+  userId: string,
+  request: NextRequest,
+  supabase: ReturnType<typeof createRouteHandlerClient>
+) {
   const startDate = request.nextUrl.searchParams.get("startDate");
   const endDate = request.nextUrl.searchParams.get("endDate");
 
@@ -137,29 +91,21 @@ async function fetchUserIncomes(userId: string, request: NextRequest, supabase: 
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "income-list",
+      limit: 120,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json(buildIncomeResponse(buildGuestIncomes()));
+    if (auth.error) {
+      return auth.error;
     }
 
-    const incomes = await fetchUserIncomes(user.id, request, supabase);
+    const incomes = await fetchUserIncomes(auth.user.id, request, auth.supabase);
     return NextResponse.json(buildIncomeResponse(incomes));
   } catch (error) {
-    const supabase = createRouteHandlerClient();
-    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-
-    if (authResult.data.user) {
-      return NextResponse.json(
-        buildIncomeResponse([])
-      );
-    }
-
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch incomes." },
+      { error: getSafeErrorMessage(error, "Failed to fetch incomes.") },
       { status: 500 }
     );
   }
@@ -172,39 +118,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const validation = validateIncomePayload(body);
+  const parsed = incomeSchema.safeParse(body);
 
-  if ("error" in validation) {
-    return NextResponse.json({ error: validation.error }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message || "Invalid income data." },
+      { status: 400 }
+    );
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "income-create",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      const income = {
-        id: `guest-income-${Date.now()}`,
-        ...validation.value,
-        created_at: new Date().toISOString()
-      };
-
-      return NextResponse.json({ income, summary: buildIncomeResponse([...buildGuestIncomes(), income]).summary });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const { data, error } = await supabase
       .from("incomes")
       .insert({
-        ...validation.value,
+        amount: parsed.data.amount,
+        source: parsed.data.source,
+        date: parsed.data.date,
+        note: parsed.data.note || null,
+        is_recurring: parsed.data.is_recurring || false,
         user_id: user.id
       })
       .select("id, amount, source, date, note, is_recurring, created_at")
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not create income." }, { status: 400 });
     }
 
     const latestIncomes = await fetchUserIncomes(user.id, new NextRequest(request.url), supabase);
@@ -215,7 +164,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create income." },
+      { error: getSafeErrorMessage(error, "Failed to create income.") },
       { status: 500 }
     );
   }
@@ -228,32 +177,44 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Income id is required." }, { status: 400 });
   }
 
-  const validation = validateIncomePayload(body);
+  const parsed = incomeSchema.safeParse(body);
 
-  if ("error" in validation) {
-    return NextResponse.json({ error: validation.error }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message || "Invalid income data." },
+      { status: 400 }
+    );
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "income-update",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("incomes")
-      .update(validation.value)
+      .update({
+        amount: parsed.data.amount,
+        source: parsed.data.source,
+        date: parsed.data.date,
+        note: parsed.data.note || null,
+        is_recurring: parsed.data.is_recurring || false
+      })
       .eq("id", body.id)
       .eq("user_id", user.id)
       .select("id, amount, source, date, note, is_recurring, created_at")
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not update income." }, { status: 400 });
     }
 
     const latestIncomes = await fetchUserIncomes(user.id, new NextRequest(request.url), supabase);
@@ -264,7 +225,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update income." },
+      { error: getSafeErrorMessage(error, "Failed to update income.") },
       { status: 500 }
     );
   }
@@ -278,19 +239,22 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "income-delete",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { error } = await supabase.from("incomes").delete().eq("id", id).eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not delete income." }, { status: 400 });
     }
 
     const latestIncomes = await fetchUserIncomes(user.id, new NextRequest(request.url), supabase);
@@ -298,8 +262,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true, summary: buildIncomeResponse(latestIncomes).summary });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete income." },
+      { error: getSafeErrorMessage(error, "Failed to delete income.") },
       { status: 500 }
     );
   }
 }
+

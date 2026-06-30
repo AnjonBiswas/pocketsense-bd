@@ -61,3 +61,33 @@ export function enforceRateLimit(request: NextRequest, options: RateLimitOptions
   rateLimitStore.set(bucketKey, current);
   return null;
 }
+
+export function enforceRateLimitByScope(scope: string, options: RateLimitOptions) {
+  const bucketKey = `${options.key}:${scope}`;
+  const now = Date.now();
+  const current = rateLimitStore.get(bucketKey);
+
+  if (!current || current.resetAt <= now) {
+    rateLimitStore.set(bucketKey, {
+      count: 1,
+      resetAt: now + options.windowMs
+    });
+    return null;
+  }
+
+  if (current.count >= options.limit) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((current.resetAt - now) / 1000))
+        }
+      }
+    );
+  }
+
+  current.count += 1;
+  rateLimitStore.set(bucketKey, current);
+  return null;
+}

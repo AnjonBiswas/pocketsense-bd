@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { applyCacheHeaders } from "@/lib/middleware/cache";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { getCategoryMeta } from "@/lib/utils/categories";
 
 export async function GET(request: NextRequest) {
@@ -8,14 +9,17 @@ export async function GET(request: NextRequest) {
   const limit = Math.max(Number(limitParam || 5), 1);
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "recent-expenses",
+      limit: 90,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return applyCacheHeaders(NextResponse.json([]), { maxAge: 60, staleWhileRevalidate: 300, isPrivate: false });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data: expenses } = await supabase
       .from("expenses")
@@ -32,14 +36,10 @@ export async function GET(request: NextRequest) {
     }));
 
     return applyCacheHeaders(NextResponse.json(payload), { maxAge: 15, staleWhileRevalidate: 60 });
-  } catch {
-    const supabase = createRouteHandlerClient();
-    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-
-    if (authResult.data.user) {
-      return applyCacheHeaders(NextResponse.json([]), { maxAge: 30, staleWhileRevalidate: 120, isPrivate: false });
-    }
-
-    return applyCacheHeaders(NextResponse.json([]), { maxAge: 30, staleWhileRevalidate: 120, isPrivate: false });
+  } catch (error) {
+    return NextResponse.json(
+      { error: getSafeErrorMessage(error, "Failed to fetch recent expenses.") },
+      { status: 500 }
+    );
   }
 }

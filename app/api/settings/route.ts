@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database.types";
+import { parsePositiveAmount, sanitizeText } from "@/lib/utils/sanitize";
 
 type SettingsResponse = {
   profile: {
@@ -34,7 +37,10 @@ type SettingsResponse = {
   };
 };
 
-async function getUserSettings(userId: string, supabase: ReturnType<typeof createRouteHandlerClient>): Promise<SettingsResponse> {
+async function getUserSettings(
+  userId: string,
+  supabase: ReturnType<typeof createRouteHandlerClient>
+): Promise<SettingsResponse> {
   const currentMonthPrefix = new Date().toISOString().slice(0, 7);
 
   const [{ data: profile }, { data: preferences }, { data: budget }, { data: fixedExpenses }, { data: incomes }] =
@@ -105,52 +111,26 @@ async function getUserSettings(userId: string, supabase: ReturnType<typeof creat
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "settings-get",
+      limit: 120,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({
-        profile: {
-          id: "guest",
-          email: "guest@pocketsense.app",
-          phone: "+8801711111111",
-          name: "PocketSense User",
-          university: "University of Dhaka",
-          avatar_url: null,
-          currency: "BDT",
-          theme: "light",
-          first_day_of_month: 1
-        },
-        preferences: {
-          language: "bn",
-          currency: "BDT",
-          theme: "light",
-          first_day_of_month: 1
-        },
-        budget: {
-          monthlyIncome: 15000,
-          savingsGoal: 3000,
-          emergencyReserve: 2500,
-          monthlyLimit: 12000,
-          fixedExpenses: [
-            { id: "guest-fixed-1", title: "বাসা ভাড়া", amount: 3500, due_day: 5 },
-            { id: "guest-fixed-2", title: "ইন্টারনেট", amount: 800, due_day: 12 }
-          ]
-        }
-      } satisfies SettingsResponse);
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const settings = await getUserSettings(user.id, supabase);
     settings.profile.email = user.email || null;
 
     return NextResponse.json(settings);
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load settings." },
+      { error: getSafeErrorMessage(error, "Failed to load settings.") },
       { status: 500 }
     );
   }
@@ -164,26 +144,29 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "settings-update",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
+
     if (body.section === "profile") {
-      const payload = {
-        name: typeof body.name === "string" ? body.name.trim() : null,
-        phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
-        university: typeof body.university === "string" ? body.university.trim() : null
-      } satisfies Database["public"]["Tables"]["profiles"]["Update"];
+      const payload: Database["public"]["Tables"]["profiles"]["Update"] = {
+        name: sanitizeText(body.name, 80) || null,
+        phone: sanitizeText(body.phone, 30) || null,
+        university: sanitizeText(body.university, 120) || null
+      };
 
       const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not update profile." }, { status: 400 });
       }
     }
 
@@ -194,20 +177,20 @@ export async function PUT(request: NextRequest) {
           : "light";
       const language = body.language === "en" ? "en" : "bn";
       const firstDayOfMonth = Math.min(Math.max(Number(body.first_day_of_month || 1), 1), 31);
-      const preferencePayload = {
+      const preferencePayload: Database["public"]["Tables"]["user_preferences"]["Insert"] = {
         user_id: user.id,
         language,
         currency: "BDT",
         theme,
         first_day_of_month: firstDayOfMonth
-      } satisfies Database["public"]["Tables"]["user_preferences"]["Insert"];
+      };
 
       const { error: preferenceError } = await supabase
         .from("user_preferences")
         .upsert(preferencePayload, { onConflict: "user_id" });
 
       if (preferenceError) {
-        return NextResponse.json({ error: preferenceError.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not update preferences." }, { status: 400 });
       }
 
       await supabase
@@ -221,14 +204,14 @@ export async function PUT(request: NextRequest) {
     }
 
     if (body.section === "budget") {
-      const monthlyIncome = Math.max(Number(body.monthlyIncome || 0), 0);
-      const savingsGoal = Math.max(Number(body.savingsGoal || 0), 0);
-      const emergencyReserve = Math.max(Number(body.emergencyReserve || 0), 0);
-      const monthlyLimit = Math.max(Number(body.monthlyLimit || monthlyIncome), 0);
+      const monthlyIncome = Math.max(parsePositiveAmount(body.monthlyIncome) || 0, 0);
+      const savingsGoal = Math.max(parsePositiveAmount(body.savingsGoal) || 0, 0);
+      const emergencyReserve = Math.max(parsePositiveAmount(body.emergencyReserve) || 0, 0);
+      const monthlyLimit = Math.max(parsePositiveAmount(body.monthlyLimit) || monthlyIncome, 0);
       const fixedExpenses = Array.isArray(body.fixedExpenses) ? body.fixedExpenses : [];
       const totalFixedExpenses = fixedExpenses.reduce((sum, item) => {
         const typed = item as { amount?: number | string };
-        return sum + Number(typed.amount || 0);
+        return sum + (parsePositiveAmount(typed.amount) || 0);
       }, 0);
 
       const { error: budgetError } = await supabase
@@ -244,7 +227,7 @@ export async function PUT(request: NextRequest) {
         );
 
       if (budgetError) {
-        return NextResponse.json({ error: budgetError.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not update budget settings." }, { status: 400 });
       }
 
       const fixedExpenseIds = fixedExpenses
@@ -274,11 +257,12 @@ export async function PUT(request: NextRequest) {
             return {
               id: typed.id || undefined,
               user_id: user.id,
-              title: String(typed.title || "Expense item"),
-              amount: Number(typed.amount || 0),
-              due_day: typed.due_day === null || typed.due_day === undefined || typed.due_day === ""
-                ? null
-                : Number(typed.due_day)
+              title: sanitizeText(typed.title, 120) || "Expense item",
+              amount: parsePositiveAmount(typed.amount) || 0,
+              due_day:
+                typed.due_day === null || typed.due_day === undefined || typed.due_day === ""
+                  ? null
+                  : Number(typed.due_day)
             };
           }),
           { onConflict: "id" }
@@ -325,7 +309,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update settings." },
+      { error: getSafeErrorMessage(error, "Failed to update settings.") },
       { status: 500 }
     );
   }
@@ -333,15 +317,17 @@ export async function PUT(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "settings-avatar",
+      limit: 15,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
 
+    const { supabase, user } = auth;
     const formData = await request.formData();
     const file = formData.get("avatar");
 
@@ -351,27 +337,22 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const path = `${user.id}/avatar-${Date.now()}.jpg`;
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(path, bytes, {
-        contentType: file.type || "image/jpeg",
-        upsert: true
-      });
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, bytes, {
+      contentType: file.type || "image/jpeg",
+      upsert: true
+    });
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not upload avatar." }, { status: 400 });
     }
 
     const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(path);
     const avatar_url = publicUrlData.publicUrl;
 
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ avatar_url })
-      .eq("id", user.id);
+    const { error: profileError } = await supabase.from("profiles").update({ avatar_url }).eq("id", user.id);
 
     if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not save avatar." }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -380,22 +361,25 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to upload avatar." },
+      { error: getSafeErrorMessage(error, "Failed to upload avatar.") },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "settings-delete-account",
+      limit: 10,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     await Promise.all([
       supabase
@@ -420,8 +404,9 @@ export async function DELETE() {
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete account." },
+      { error: getSafeErrorMessage(error, "Failed to delete account.") },
       { status: 500 }
     );
   }
 }
+

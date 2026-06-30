@@ -1,10 +1,11 @@
 import { endOfMonth, format, parseISO, startOfMonth, subMonths } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
-import { applyCacheHeaders, enforceRateLimit } from "@/lib/middleware/cache";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { applyCacheHeaders } from "@/lib/middleware/cache";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { compareSpendingWithAverage, predictNextMonthExpensesByCategory } from "@/lib/ml/expensePredictor";
 import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
-import { FALLBACK_EXPENSES, normalizeExpense } from "@/lib/utils/expenses";
+import { normalizeExpense } from "@/lib/utils/expenses";
 import { generateInsights } from "@/lib/utils/insights";
 import { type IncomeRecord } from "@/lib/utils/income";
 
@@ -57,45 +58,6 @@ type ReportResponse = {
     insight: string;
   }>;
 };
-
-function buildEmptyReportResponse(startDate: string, endDate: string): ReportResponse {
-  return buildResponse(startDate, endDate, [], [], []);
-}
-
-function buildFallbackIncomes(startDate: string, endDate: string): IncomeRecord[] {
-  const start = parseISO(startDate);
-  const month = format(start, "yyyy-MM");
-  void endDate;
-  return [
-    {
-      id: "report-income-1",
-      amount: 7000,
-      source: "allowance",
-      date: `${month}-02`,
-      note: "Allowance",
-      is_recurring: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "report-income-2",
-      amount: 3500,
-      source: "tuition",
-      date: `${month}-10`,
-      note: "Student: Rafi",
-      is_recurring: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "report-income-3",
-      amount: 2800,
-      source: "freelance",
-      date: `${month}-16`,
-      note: "Banner design",
-      is_recurring: false,
-      created_at: new Date().toISOString()
-    }
-  ];
-}
 
 function buildDailySpending(expenses: ReturnType<typeof normalizeExpense>[], startDate: string, endDate: string, totalIncome: number) {
   const byDate = expenses.reduce<Record<string, number>>((accumulator, expense) => {
@@ -216,33 +178,21 @@ function buildResponse(
 }
 
 export async function GET(request: NextRequest) {
-  const rateLimited = enforceRateLimit(request, {
-    key: "reports",
-    limit: 60,
-    windowMs: 60_000
-  });
-
-  if (rateLimited) {
-    return rateLimited;
-  }
-
   const startDate = request.nextUrl.searchParams.get("startDate") || format(startOfMonth(new Date()), "yyyy-MM-dd");
   const endDate = request.nextUrl.searchParams.get("endDate") || format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "reports",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      const incomes = buildFallbackIncomes(startDate, endDate);
-      const expenses = FALLBACK_EXPENSES.filter((expense) => expense.date >= startDate && expense.date <= endDate);
-      return applyCacheHeaders(
-        NextResponse.json(buildResponse(startDate, endDate, expenses, incomes, FALLBACK_EXPENSES)),
-        { maxAge: 30, staleWhileRevalidate: 180 }
-      );
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const historyStartDate = format(startOfMonth(subMonths(parseISO(startDate), 3)), "yyyy-MM-dd");
 
@@ -264,7 +214,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (expenseError || incomeError) {
-      return NextResponse.json(buildEmptyReportResponse(startDate, endDate));
+      return NextResponse.json(buildResponse(startDate, endDate, [], [], []));
     }
 
     const allExpenses = (expenseRows || []).map((expense) => normalizeExpense(expense));
@@ -279,23 +229,9 @@ export async function GET(request: NextRequest) {
       { maxAge: 30, staleWhileRevalidate: 180 }
     );
   } catch (error) {
-    const supabase = createRouteHandlerClient();
-    const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-
-    if (authResult.data.user) {
-      return applyCacheHeaders(NextResponse.json(buildEmptyReportResponse(startDate, endDate)), {
-        maxAge: 30,
-        staleWhileRevalidate: 180
-      });
-    }
-
-    const incomes = buildFallbackIncomes(startDate, endDate);
-    const expenses = FALLBACK_EXPENSES.filter((expense) => expense.date >= startDate && expense.date <= endDate);
-    return applyCacheHeaders(
-      NextResponse.json(buildResponse(startDate, endDate, expenses, incomes, FALLBACK_EXPENSES), {
-        status: error instanceof Error ? 200 : 200
-      }),
-      { maxAge: 30, staleWhileRevalidate: 180 }
+    return NextResponse.json(
+      { error: getSafeErrorMessage(error, "Failed to load reports.") },
+      { status: 500 }
     );
   }
 }

@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { generateReferralCode } from "@/lib/utils/referral";
 
@@ -24,16 +26,19 @@ async function ensureReferralSeed(userId: string, name: string | null, supabase:
   return referralCode;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "referrals-list",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ code: null, stats: { signups: 0, pending: 0, rewardXp: 0 } });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle();
     const code = await ensureReferralSeed(user.id, profile?.name || null, supabase);
@@ -61,7 +66,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load referrals." },
+      { error: getSafeErrorMessage(error, "Failed to load referrals.") },
       { status: 500 }
     );
   }

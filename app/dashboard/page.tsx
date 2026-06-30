@@ -1,15 +1,12 @@
-import { DashboardOverviewClient } from "@/components/dashboard/DashboardOverviewClient";
-import { DashboardPreload } from "@/components/dashboard/DashboardPreload";
-import { getDashboardExpenses } from "@/lib/dashboard/get-dashboard-expenses";
-import { getDashboardStats } from "@/lib/dashboard/get-dashboard-stats";
+import { Suspense } from "react";
+import { DashboardPageSkeleton } from "@/components/dashboard/DashboardPageSkeleton";
+import DashboardContent from "./DashboardContent";
 
-export default async function DashboardPage() {
-  const [initialStats, initialExpenses] = await Promise.all([getDashboardStats(), getDashboardExpenses()]);
-
+export default function DashboardPage() {
   return (
-    <>
-      <DashboardPreload />
-      <DashboardOverviewClient initialStats={initialStats} initialExpenses={initialExpenses} />
-    </>
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
+

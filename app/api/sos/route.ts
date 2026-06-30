@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
+import { format } from "date-fns";
 import {
   buildSOSUpsertPayload,
   buildSurvivalTipPayload,
   getSOSState,
   hashPIN
 } from "@/lib/sos/get-sos-state";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { isLuxuryCategory } from "@/lib/utils/sosMode";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "sos-get",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    const state = await getSOSState(supabase, user?.id);
+    if (auth.error) {
+      return auth.error;
+    }
 
-    if (user?.id && state.isActive && !state.shouldActivate) {
+    const { supabase, user } = auth;
+    const state = await getSOSState(supabase, user.id);
+
+    if (state.isActive && !state.shouldActivate) {
       await supabase
         .from("sos_modes")
         .update({
@@ -29,12 +37,13 @@ export async function GET() {
 
     return NextResponse.json({
       ...state,
+      periodKey: format(new Date(), "yyyy-MM"),
       tips: buildSurvivalTipPayload(state.activatedTips)
     });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to load SOS mode."
+        error: getSafeErrorMessage(error, "Failed to load SOS mode.")
       },
       { status: 500 }
     );
@@ -57,19 +66,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "sos-update",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    const state = await getSOSState(supabase, user?.id);
-
-    if (!user?.id) {
-      return NextResponse.json({
-        success: true,
-        state
-      });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
+    const state = await getSOSState(supabase, user.id);
 
     if (body.action === "activate") {
       const tipsActivated = Array.isArray(body.tipsActivated) ? body.tipsActivated : [];
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not activate SOS mode." }, { status: 400 });
       }
 
       return NextResponse.json({
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id);
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not deactivate SOS mode." }, { status: 400 });
       }
 
       return NextResponse.json({
@@ -128,7 +136,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not verify SOS PIN." }, { status: 400 });
       }
 
       if (!record?.lock_pin_hash) {
@@ -162,7 +170,7 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id);
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json({ error: "Could not update SOS compliance." }, { status: 400 });
       }
 
       return NextResponse.json({
@@ -175,7 +183,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to update SOS mode."
+        error: getSafeErrorMessage(error, "Failed to update SOS mode.")
       },
       { status: 500 }
     );

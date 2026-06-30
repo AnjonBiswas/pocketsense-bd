@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "expense-templates-list",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ templates: [] });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("expense_templates")
@@ -31,7 +35,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load templates." },
+      { error: getSafeErrorMessage(error, "Failed to load templates.") },
       { status: 500 }
     );
   }
@@ -52,14 +56,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "expense-templates-create",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("expense_templates")
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to save template." },
+      { error: getSafeErrorMessage(error, "Failed to save template.") },
       { status: 500 }
     );
   }
@@ -99,25 +106,28 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "expense-templates-delete",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { error } = await supabase.from("expense_templates").delete().eq("id", id).eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not delete template." }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete template." },
+      { error: getSafeErrorMessage(error, "Failed to delete template.") },
       { status: 500 }
     );
   }

@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "@/lib/notifications/notificationService";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "notification-preferences-get",
+      limit: 60,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json(DEFAULT_NOTIFICATION_PREFERENCES);
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const { data } = await supabase
       .from("notification_preferences")
@@ -19,15 +23,11 @@ export async function GET() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (!data) {
-      return NextResponse.json(DEFAULT_NOTIFICATION_PREFERENCES);
-    }
-
-    return NextResponse.json(data);
+    return NextResponse.json(data || DEFAULT_NOTIFICATION_PREFERENCES);
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to fetch notification preferences."
+        error: getSafeErrorMessage(error, "Failed to fetch notification preferences.")
       },
       { status: 500 }
     );
@@ -42,14 +42,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "notification-preferences-update",
+      limit: 30,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ success: true, preference: DEFAULT_NOTIFICATION_PREFERENCES });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const payload = {
       user_id: user.id,
@@ -76,14 +79,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: "Could not update notification preferences." }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, preference: data });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to update notification preferences."
+        error: getSafeErrorMessage(error, "Failed to update notification preferences.")
       },
       { status: 500 }
     );

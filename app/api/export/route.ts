@@ -1,16 +1,20 @@
-import { NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/middleware/auth";
+import { getSafeErrorMessage } from "@/lib/security/errors";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const auth = await requireApiUser(request, {
+      rateLimitKey: "export-data",
+      limit: 10,
+      windowMs: 60_000
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    if (auth.error) {
+      return auth.error;
     }
+
+    const { supabase, user } = auth;
 
     const [
       { data: profile },
@@ -63,7 +67,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to export data." },
+      { error: getSafeErrorMessage(error, "Failed to export data.") },
       { status: 500 }
     );
   }
