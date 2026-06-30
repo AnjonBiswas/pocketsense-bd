@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { Camera, LoaderCircle } from "lucide-react";
@@ -73,8 +74,7 @@ export function AvatarUpload({ avatarUrl, onUploaded }: AvatarUploadProps) {
           onClick={() => inputRef.current?.click()}
         >
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="Profile avatar" className="h-full w-full object-cover" />
+            <Image src={avatarUrl} alt="Profile avatar" fill sizes="96px" className="object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
               <Camera className="h-8 w-8" />

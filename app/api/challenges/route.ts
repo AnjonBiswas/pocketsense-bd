@@ -1,6 +1,7 @@
 import { endOfMonth, format, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { CHALLENGES, type ChallengeDefinition } from "@/data/challenges";
+import { applyCacheHeaders } from "@/lib/middleware/cache";
 import { createRouteHandlerClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import { checkChallengeProgress } from "@/lib/utils/challengeTracker";
 import { calculateBudgetStreak } from "@/lib/utils/streakCalculator";
@@ -188,13 +189,13 @@ export async function GET() {
       )
     );
 
-    return NextResponse.json({
+    return applyCacheHeaders(NextResponse.json({
       profile,
       streak,
       activeChallenges: challenges.filter((challenge) => challenge.status === "active"),
       availableChallenges: challenges.filter((challenge) => challenge.status === "available"),
       completedChallenges: challenges.filter((challenge) => challenge.status === "completed")
-    });
+    }), { maxAge: 300, staleWhileRevalidate: 900, isPrivate: false });
   }
 
   try {
@@ -225,13 +226,13 @@ export async function GET() {
         )
       );
 
-      return NextResponse.json({
+      return applyCacheHeaders(NextResponse.json({
         profile,
         streak,
         activeChallenges: challenges.filter((challenge) => challenge.status === "active"),
         availableChallenges: challenges.filter((challenge) => challenge.status === "available"),
         completedChallenges: challenges.filter((challenge) => challenge.status === "completed")
-      });
+      }), { maxAge: 300, staleWhileRevalidate: 900, isPrivate: false });
     }
 
     const synced = await syncChallengesForUser(supabase, user.id);

@@ -147,15 +147,15 @@ export function ReceiptScanner({ onExtract }: ReceiptScannerProps) {
         <ScanSearch className="h-5 w-5 text-violet-700" />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
         <Button
           type="button"
           variant="outline"
           className="h-auto min-h-[56px] justify-start rounded-2xl border-violet-200 bg-white px-4 py-3 text-left whitespace-normal"
           onClick={() => cameraInputRef.current?.click()}
         >
-          <Camera className="mr-2 h-4 w-4" />
-          Camera
+          <Camera className="mr-2 h-4 w-4 shrink-0" />
+          <span className="min-w-0 leading-5">Camera</span>
         </Button>
         <Button
           type="button"
@@ -163,8 +163,8 @@ export function ReceiptScanner({ onExtract }: ReceiptScannerProps) {
           className="h-auto min-h-[56px] justify-start rounded-2xl border-violet-200 bg-white px-4 py-3 text-left whitespace-normal"
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="mr-2 h-4 w-4" />
-          Image / PDF
+          <Upload className="mr-2 h-4 w-4 shrink-0" />
+          <span className="min-w-0 leading-5">Image / PDF</span>
         </Button>
         <Button
           type="button"
@@ -172,8 +172,8 @@ export function ReceiptScanner({ onExtract }: ReceiptScannerProps) {
           className="h-auto min-h-[56px] justify-start rounded-2xl border-violet-200 bg-white px-4 py-3 text-left whitespace-normal"
           onClick={() => fileInputRef.current?.click()}
         >
-          <FileText className="mr-2 h-4 w-4" />
-          Excel / CSV
+          <FileText className="mr-2 h-4 w-4 shrink-0" />
+          <span className="min-w-0 leading-5">Excel / CSV</span>
         </Button>
       </div>
 

@@ -1,33 +1,16 @@
-import Link from "next/link";
 import { Suspense } from "react";
-import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
+import { LandingDashboard } from "@/components/landing/LandingDashboard";
 import { ReferralLandingBanner } from "@/components/features/ReferralLandingBanner";
-import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="space-y-4 text-center">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f7fff9_48%,#fffdf7_100%)] dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_55%,#171717_100%)]">
+      <div className="px-4 pt-4 sm:px-6">
         <Suspense fallback={null}>
           <ReferralLandingBanner />
         </Suspense>
-        <div className="flex justify-center">
-          <PocketSenseLogo showWordmark={false} size={88} priority />
-        </div>
-        <h1 className="text-4xl font-bold">PocketSense BD</h1>
-        <p className="text-muted-foreground">Free student budgeting with email/password and optional Google sign-in.</p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Button asChild>
-            <Link href="/auth/login">Log In</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/auth/signup">Create Free Account</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/blog">Read Blog</Link>
-          </Button>
-        </div>
       </div>
+      <LandingDashboard />
     </main>
   );
 }

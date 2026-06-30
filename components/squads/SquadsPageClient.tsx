@@ -1,13 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { CreateSquadModal } from "@/components/squads/CreateSquadModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SquadCardSummary } from "@/lib/utils/squads";
+
+const CreateSquadModal = dynamic(
+  () => import("@/components/squads/CreateSquadModal").then((module) => module.CreateSquadModal),
+  {
+    ssr: false,
+    loading: () => <div className="h-12 w-36 animate-pulse rounded-full bg-white/70 dark:bg-slate-800" />
+  }
+);
 
 export function SquadsPageClient() {
   const [squads, setSquads] = useState<SquadCardSummary[]>([]);
@@ -116,4 +124,3 @@ export function SquadsPageClient() {
     </section>
   );
 }
-

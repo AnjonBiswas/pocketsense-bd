@@ -1,6 +1,6 @@
-# PocketSense BD
+# PocketSense
 
-PocketSense BD is a student money management app for Bangladesh, built with Next.js and Supabase.
+PocketSense is a student money management app for Bangladesh, built with Next.js and Supabase.
 
 ## Features
 
@@ -100,5 +100,4 @@ Main integration files:
 
 - Jest and React Testing Library
 - Playwright
-
 

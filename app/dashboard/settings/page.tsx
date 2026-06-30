@@ -36,7 +36,7 @@ const sections = [
   {
     href: "/dashboard/settings/profile",
     title: "About",
-    description: "PocketSense BD helps students manage money with local-first budgeting habits.",
+    description: "PocketSense helps students manage money with local-first budgeting habits.",
     icon: Info
   }
 ];

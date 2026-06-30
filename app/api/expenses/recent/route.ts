@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyCacheHeaders } from "@/lib/middleware/cache";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { getCategoryMeta } from "@/lib/utils/categories";
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json([]);
+      return applyCacheHeaders(NextResponse.json([]), { maxAge: 60, staleWhileRevalidate: 300, isPrivate: false });
     }
 
     const { data: expenses } = await supabase
@@ -30,15 +31,15 @@ export async function GET(request: NextRequest) {
       formattedDate: new Date(expense.date).toLocaleDateString("en-GB")
     }));
 
-    return NextResponse.json(payload);
+    return applyCacheHeaders(NextResponse.json(payload), { maxAge: 15, staleWhileRevalidate: 60 });
   } catch {
     const supabase = createRouteHandlerClient();
     const authResult = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
     if (authResult.data.user) {
-      return NextResponse.json([]);
+      return applyCacheHeaders(NextResponse.json([]), { maxAge: 30, staleWhileRevalidate: 120, isPrivate: false });
     }
 
-    return NextResponse.json([]);
+    return applyCacheHeaders(NextResponse.json([]), { maxAge: 30, staleWhileRevalidate: 120, isPrivate: false });
   }
 }

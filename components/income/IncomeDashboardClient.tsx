@@ -1,14 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import { format } from "date-fns";
 import { CalendarClock, RefreshCcw, Sparkles, Wallet } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AddIncomeModal, type AddIncomeModalPrefill } from "@/components/income/AddIncomeModal";
 import { IncomeSourceCard } from "@/components/income/IncomeSourceCard";
 import { TuitionTracker } from "@/components/income/TuitionTracker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AddIncomeModalPrefill } from "@/components/income/AddIncomeModal";
 import {
   INCOME_SOURCES,
   type IncomeRecord,
@@ -18,6 +19,14 @@ import {
   getIncomeSourceMeta,
   predictNextIncome
 } from "@/lib/utils/income";
+
+const AddIncomeModal = dynamic(
+  () => import("@/components/income/AddIncomeModal").then((module) => module.AddIncomeModal),
+  {
+    ssr: false,
+    loading: () => null
+  }
+);
 
 type IncomeDashboardClientProps = {
   initialIncomes: IncomeRecord[];

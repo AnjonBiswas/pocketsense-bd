@@ -10,7 +10,7 @@ export function WelcomeStep({ onNext }: { onNext: () => void }) {
       <div className="space-y-5">
         <div className="inline-flex items-center gap-3 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
           <PocketSenseLogo showWordmark={false} size={30} />
-          <span>PocketSense BD</span>
+          <span>PocketSense</span>
         </div>
         <div className="space-y-3">
           <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-50">

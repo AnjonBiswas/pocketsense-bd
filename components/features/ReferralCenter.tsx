@@ -35,8 +35,8 @@ export function ReferralCenter({ code }: { code: string }) {
     if ("share" in navigator) {
       await navigator
         .share({
-          title: "PocketSense BD",
-          text: "Join PocketSense BD and we both get +500 XP.",
+          title: "PocketSense",
+          text: "Join PocketSense and we both get +500 XP.",
           url: link
         })
         .catch(() => null);

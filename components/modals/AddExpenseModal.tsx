@@ -1,12 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { LoaderCircle, Sparkles, Wand2 } from "lucide-react";
 import { BudgetLock } from "@/components/features/BudgetLock";
 import { ExpenseTemplates } from "@/components/features/ExpenseTemplates";
-import { ReceiptScanner } from "@/components/features/ReceiptScanner";
 import { ThemeIllustration } from "@/components/features/ThemeIllustration";
-import { TreatCalculator } from "@/components/features/TreatCalculator";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +22,22 @@ import { suggestCategoryFromNote } from "@/lib/ml/categorizer";
 import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
 import type { ExpenseTemplate } from "@/lib/utils/expenseTemplates";
 import { useExpenseStore } from "@/store/expenseStore";
+
+const ReceiptScanner = dynamic(
+  () => import("@/components/features/ReceiptScanner").then((module) => module.ReceiptScanner),
+  {
+    ssr: false,
+    loading: () => <div className="rounded-[28px] border border-violet-200/80 bg-violet-50/60 p-5 text-sm text-violet-900">Loading receipt tools...</div>
+  }
+);
+
+const TreatCalculator = dynamic(
+  () => import("@/components/features/TreatCalculator").then((module) => module.TreatCalculator),
+  {
+    ssr: false,
+    loading: () => <div className="rounded-[28px] border border-amber-200 bg-amber-50/80 p-5 text-sm text-amber-950">Preparing treat calculator...</div>
+  }
+);
 
 type BudgetSnapshot = {
   dailyBudget: number;
@@ -258,7 +273,7 @@ export function AddExpenseModal() {
         }
       }}
     >
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl sm:p-0">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:!w-[min(92vw,66rem)] sm:!max-w-[66rem] sm:p-0">
         <DialogHeader className="border-b border-slate-200/70 px-5 pb-4 pt-6 sm:px-7 sm:pb-5">
           <DialogTitle>নতুন খরচ যোগ করো</DialogTitle>
           <DialogDescription>Amount, category, note, and date দিয়ে দ্রুত expense save করো.</DialogDescription>
@@ -266,8 +281,8 @@ export function AddExpenseModal() {
 
         <form className="space-y-6 px-5 pb-5 pt-5 sm:px-7 sm:pb-7" onSubmit={handleSubmit}>
           <div className="rounded-[30px] border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm sm:p-5">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] xl:items-stretch">
-              <div className="space-y-3">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)] xl:items-start">
+              <div className="min-w-0 space-y-3">
                 <ReceiptScanner
                   onExtract={({ amount: scannedAmount, date: scannedDate, merchant, note: scannedNote, category: scannedCategory, receiptUrl: scannedReceiptUrl }) => {
                     if (scannedAmount) setAmount(String(scannedAmount));
@@ -286,7 +301,7 @@ export function AddExpenseModal() {
                   lightSrc="/illustrations/receipt-light.svg"
                   darkSrc="/illustrations/receipt-dark.svg"
                   alt="Receipt helper"
-                  className="mx-auto h-36 w-full max-w-sm object-contain xl:h-40"
+                  className="mx-auto h-44 w-full max-w-sm object-contain xl:h-48"
                 />
                 <div className="mt-4 space-y-2">
                   <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Smart expense entry</p>

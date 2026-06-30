@@ -1,14 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { updateEmail, updatePassword } from "@/lib/auth/actions";
-import { DeleteAccountModal } from "@/components/settings/DeleteAccountModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const DeleteAccountModal = dynamic(
+  () => import("@/components/settings/DeleteAccountModal").then((module) => module.DeleteAccountModal),
+  {
+    ssr: false,
+    loading: () => null
+  }
+);
 
 export function AccountSettingsClient() {
   const router = useRouter();

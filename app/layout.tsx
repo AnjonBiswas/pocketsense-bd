@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { PWAClientShell } from "@/components/pwa/PWAClientShell";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 import "../styles/mobile.css";
@@ -53,7 +54,7 @@ const hindSiliguri = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PocketSense BD",
+  title: "PocketSense",
   description: "Student money management app for Bangladesh.",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -87,7 +88,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={hindSiliguri.variable}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+        </ThemeProvider>
         <PWAClientShell />
       </body>
     </html>
