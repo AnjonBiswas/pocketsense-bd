@@ -1,7 +1,7 @@
 export const translations = {
   bn: {
     common: {
-      appName: "PocketSense BD",
+      appName: "PocketSense",
       welcome: "ফিরে আসায় স্বাগতম",
       loading: "লোড হচ্ছে...",
       logout: "লগআউট",
@@ -195,7 +195,7 @@ export const translations = {
   },
   en: {
     common: {
-      appName: "PocketSense BD",
+      appName: "PocketSense",
       welcome: "Welcome back",
       loading: "Loading...",
       logout: "Logout",

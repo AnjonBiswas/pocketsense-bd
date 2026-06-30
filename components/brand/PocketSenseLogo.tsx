@@ -27,7 +27,7 @@ export function PocketSenseLogo({
     <>
       <Image
         src="/logo.svg"
-        alt="PocketSense BD logo"
+        alt="PocketSense logo"
         width={size}
         height={size}
         priority={priority}
@@ -35,7 +35,7 @@ export function PocketSenseLogo({
       />
       {showWordmark ? (
         <div className={cn("min-w-0", textClassName)}>
-          <p className="truncate text-sm font-semibold tracking-wide text-primary">PocketSense BD</p>
+          <p className="truncate text-sm font-semibold tracking-wide text-primary">PocketSense</p>
           {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}
         </div>
       ) : null}
