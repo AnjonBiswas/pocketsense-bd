@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import useSWR from "swr";
-import { Flame, Sparkles, Wallet } from "lucide-react";
+import { Flame, Sparkles } from "lucide-react";
+import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
 import { dashboardNavItems } from "@/components/dashboard/nav-config";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { DashboardStats } from "@/lib/dashboard/get-dashboard-stats";
@@ -28,9 +29,11 @@ export function Sidebar() {
     <aside className="hidden w-[280px] shrink-0 border-r border-white/50 bg-white/75 px-5 py-6 text-foreground backdrop-blur xl:flex xl:flex-col xl:gap-6 dark:border-slate-800 dark:bg-slate-950/80">
       <div className="rounded-[28px] bg-gradient-to-br from-primary via-teal-600 to-emerald-500 p-5 text-primary-foreground shadow-xl shadow-teal-900/15">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-white/20 p-3">
-            <Wallet className="h-5 w-5" />
-          </div>
+          <PocketSenseLogo
+            showWordmark={false}
+            size={48}
+            className="rounded-2xl bg-white/18 p-2"
+          />
           <div>
             <p className="text-sm/5 opacity-85">{t("common.appName")}</p>
             <h2 className="text-xl font-semibold">{t("dashboard.overview")}</h2>

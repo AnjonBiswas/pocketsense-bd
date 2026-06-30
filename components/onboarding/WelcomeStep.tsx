@@ -1,15 +1,16 @@
 "use client";
 
-import { ArrowRight, Coins, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, Coins, WalletCards } from "lucide-react";
+import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
 import { Button } from "@/components/ui/button";
 
 export function WelcomeStep({ onNext }: { onNext: () => void }) {
   return (
     <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr] xl:items-center">
       <div className="space-y-5">
-        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
-          <Sparkles className="h-4 w-4" />
-          PocketSense BD
+        <div className="inline-flex items-center gap-3 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+          <PocketSenseLogo showWordmark={false} size={30} />
+          <span>PocketSense BD</span>
         </div>
         <div className="space-y-3">
           <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-50">

@@ -4,9 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Globe, LogOut, Menu, Moon, Settings, Sun, User2 } from "lucide-react";
-import { signOut } from "@/lib/auth/actions";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { signOut } from "@/lib/auth/actions";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type NavbarProps = {
   userName: string;
@@ -46,15 +47,7 @@ export function Navbar({ userName, userPhone, avatarUrl }: NavbarProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-white/50 bg-white/85 backdrop-blur dark:border-slate-700 dark:bg-slate-950/85">
       <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-6">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/20">
-            ৳
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-wide text-primary">{t("common.appName")}</p>
-            <p className="text-xs text-muted-foreground">{t("dashboard.today")}</p>
-          </div>
-        </Link>
+        <PocketSenseLogo href="/dashboard" subtitle={t("dashboard.today")} priority />
 
         <div className="flex items-center gap-2">
           <Button

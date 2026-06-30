@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Lock, Mail, UserRound } from "lucide-react";
+import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
 import { signInWithEmail, signInWithGoogle, signUpWithEmail } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -121,7 +122,11 @@ export function AuthShell({ mode }: { mode: AuthMode }) {
       <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="hidden rounded-[40px] border border-white/60 bg-slate-950 p-8 text-white shadow-2xl lg:flex lg:flex-col lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-300">PocketSense BD</p>
+            <PocketSenseLogo
+              size={52}
+              subtitle=""
+              textClassName="[&_p:first-child]:uppercase [&_p:first-child]:tracking-[0.28em] [&_p:first-child]:text-emerald-300"
+            />
             <h1 className="mt-5 text-4xl font-semibold leading-tight">
               Student money management,
               <br />
@@ -148,9 +153,7 @@ export function AuthShell({ mode }: { mode: AuthMode }) {
 
         <Card className="border-white/60 bg-white/92 shadow-xl backdrop-blur">
           <CardHeader className="space-y-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary text-2xl font-bold text-primary-foreground shadow-lg shadow-primary/25">
-              ৳
-            </div>
+            <PocketSenseLogo showWordmark={false} size={56} priority />
             <div>
               <CardTitle className="text-3xl">{title}</CardTitle>
               <CardDescription className="mt-2 text-sm leading-6">{subtitle}</CardDescription>
