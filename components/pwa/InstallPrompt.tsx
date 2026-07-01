@@ -77,12 +77,12 @@ export function InstallPrompt() {
         </div>
         <button
           type="button"
-          className="tap-safe rounded-full p-2 text-muted-foreground transition hover:bg-secondary"
+          className="tap-safe flex h-10 w-10 items-center justify-center rounded-full p-0 text-muted-foreground transition hover:bg-secondary"
           onClick={() => {
             hideForCooldown();
           }}
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4 shrink-0" />
         </button>
       </div>
       <div className="mt-4 flex gap-3">
