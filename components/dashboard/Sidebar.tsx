@@ -2,22 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import useSWR from "swr";
 import { Flame, Sparkles } from "lucide-react";
 import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
 import { dashboardNavItems } from "@/components/dashboard/nav-config";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { DashboardStats } from "@/lib/dashboard/get-dashboard-stats";
-import { jsonFetcher } from "@/lib/fetcher";
 import { cn } from "@/lib/utils";
+import { useDashboardStore } from "@/store/dashboardStore";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
-  const { data: stats } = useSWR<DashboardStats>("/api/dashboard/stats", jsonFetcher, {
-    refreshInterval: 60000,
-    revalidateOnFocus: false
-  });
+  const stats = useDashboardStore((state) => state.stats);
 
   const quickStats = [
     { label: t("dashboard.quickBudget"), value: `৳ ${(stats?.monthlyLimit ?? 0).toFixed(0)}` },
@@ -51,6 +46,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch
               className={cn(
                 "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                 isActive

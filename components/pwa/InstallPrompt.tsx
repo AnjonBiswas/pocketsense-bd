@@ -7,12 +7,25 @@ import { Button } from "@/components/ui/button";
 import { isRunningAsPWA } from "@/lib/utils/pwa";
 
 const TRIGGER_COOKIE = "pocketsense_install_prompt=1";
+const COOLDOWN_STORAGE_KEY = "pocketsense_install_prompt_hidden_until";
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
 export function InstallPrompt() {
   const pathname = usePathname();
   const [installEvent, setInstallEvent] = useState<WindowEventMap["beforeinstallprompt"] | null>(null);
   const [visible, setVisible] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
+  const [isCoolingDown, setIsCoolingDown] = useState(false);
+
+  function hideForCooldown() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(COOLDOWN_STORAGE_KEY, String(Date.now() + TWO_DAYS_MS));
+    setIsCoolingDown(true);
+    setVisible(false);
+  }
 
   useEffect(() => {
     if (isRunningAsPWA()) {
@@ -26,6 +39,8 @@ export function InstallPrompt() {
 
     const refreshEligibility = () => {
       setShouldShow(document.cookie.includes(TRIGGER_COOKIE));
+      const hiddenUntil = Number(window.localStorage.getItem(COOLDOWN_STORAGE_KEY) || 0);
+      setIsCoolingDown(Number.isFinite(hiddenUntil) && hiddenUntil > Date.now());
     };
 
     refreshEligibility();
@@ -39,13 +54,13 @@ export function InstallPrompt() {
   }, []);
 
   useEffect(() => {
-    if (isRunningAsPWA() || !shouldShow || !pathname.startsWith("/dashboard") || !installEvent) {
+    if (isRunningAsPWA() || isCoolingDown || !shouldShow || !pathname.startsWith("/dashboard") || !installEvent) {
       return;
     }
 
     setVisible(true);
     document.cookie = "pocketsense_install_prompt=; path=/; max-age=0; samesite=lax";
-  }, [installEvent, pathname, shouldShow]);
+  }, [installEvent, isCoolingDown, pathname, shouldShow]);
 
   if (!visible || !installEvent) {
     return null;
@@ -64,7 +79,7 @@ export function InstallPrompt() {
           type="button"
           className="tap-safe rounded-full p-2 text-muted-foreground transition hover:bg-secondary"
           onClick={() => {
-            setVisible(false);
+            hideForCooldown();
           }}
         >
           <X className="h-4 w-4" />
@@ -77,6 +92,7 @@ export function InstallPrompt() {
           onClick={async () => {
             await installEvent.prompt();
             const choice = await installEvent.userChoice;
+            hideForCooldown();
             if (choice.outcome === "accepted") {
               setVisible(false);
             }
@@ -90,7 +106,7 @@ export function InstallPrompt() {
           variant="outline"
           className="rounded-full"
           onClick={() => {
-            setVisible(false);
+            hideForCooldown();
           }}
         >
           Later

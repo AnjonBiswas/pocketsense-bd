@@ -1,54 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AlertBanner } from "@/components/notifications/AlertBanner";
-
-type DashboardStatsPayload = {
-  dailyBudget: number;
-  alerts: Array<{
-    type: "warning" | "info" | "success";
-    title?: string;
-    message: string;
-  }>;
-};
+import { useDashboardStore } from "@/store/dashboardStore";
 
 export function NotificationBannerShell() {
   const { t } = useLanguage();
-  const [banner, setBanner] = useState<{
-    type: "info" | "warning" | "error" | "success";
-    title: string;
-    message: string;
-  } | null>(null);
+  const stats = useDashboardStore((state) => state.stats);
+  const banner = useMemo(() => {
+    if (!stats) {
+      return null;
+    }
 
-  useEffect(() => {
-    fetch("/api/dashboard/stats", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((payload: DashboardStatsPayload) => {
-        if (payload?.dailyBudget > 0) {
-          setBanner({
-            type: "info",
-            title: t("dashboard.budgetReminderTitle"),
-            message: t("dashboard.budgetReminderMessage").replace("{{amount}}", payload.dailyBudget.toFixed(0))
-          });
-          return;
-        }
+    if (stats.dailyBudget > 0) {
+      return {
+        type: "info" as const,
+        title: t("dashboard.budgetReminderTitle"),
+        message: t("dashboard.budgetReminderMessage").replace("{{amount}}", stats.dailyBudget.toFixed(0))
+      };
+    }
 
-        const firstAlert = payload?.alerts?.[0];
+    const firstAlert = stats.alerts?.[0];
+    if (!firstAlert) {
+      return null;
+    }
 
-        if (!firstAlert) {
-          setBanner(null);
-          return;
-        }
-
-        setBanner({
-          type: firstAlert.type,
-          title: firstAlert.title || t("dashboard.updateTitle"),
-          message: firstAlert.message
-        });
-      })
-      .catch(() => setBanner(null));
-  }, [t]);
+    return {
+      type: firstAlert.type,
+      title: firstAlert.title || t("dashboard.updateTitle"),
+      message: firstAlert.message
+    };
+  }, [stats, t]);
 
   if (!banner) {
     return null;

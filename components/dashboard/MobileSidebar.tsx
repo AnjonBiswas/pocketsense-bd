@@ -91,6 +91,7 @@ export function MobileSidebar({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className={cn(
                   "flex min-h-[48px] items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
                   isActive

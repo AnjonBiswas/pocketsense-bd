@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell, LoaderCircle, Trash2 } from "lucide-react";
@@ -24,21 +24,60 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
   const { t } = useLanguage();
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
-  const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const hasLoadedRef = useRef(false);
 
-  function load(seed = false) {
-    startTransition(async () => {
+  async function load(seed = false) {
+    setIsLoading(true);
+    try {
       const response = await fetch(`/api/notifications${seed ? "?seed=true" : ""}`, { cache: "no-store" });
       const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload) return;
+      if (!response.ok || !payload) {
+        setIsLoading(false);
+        return;
+      }
       setNotifications(payload.notifications || []);
-    });
+      hasLoadedRef.current = true;
+    } catch {
+      // Ignore notification load failures so the navbar stays responsive.
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   useEffect(() => {
-    load();
+    const scheduleIdleLoad = () => {
+      if (hasLoadedRef.current) {
+        return;
+      }
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        const idleId = window.requestIdleCallback(() => {
+          void load();
+        });
+        return () => window.cancelIdleCallback(idleId);
+      }
+
+      const timeoutId = globalThis.setTimeout(() => {
+        void load();
+      }, 1500);
+      return () => globalThis.clearTimeout(timeoutId);
+    };
+
+    const cleanup = scheduleIdleLoad();
+    return () => {
+      if (typeof cleanup === "function") {
+        cleanup();
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (isOpen && !hasLoadedRef.current && !notifications.length) {
+      void load();
+    }
+  }, [isOpen, notifications.length]);
 
   const unreadCount = notifications.filter((item) => !item.read).length;
   const groupedNotifications = useMemo(() => {
@@ -109,14 +148,14 @@ export function NotificationCenter({ compact = false }: NotificationCenterProps)
         </div>
 
         <div className="max-h-[70vh] overflow-y-auto px-4 py-4">
-          {isPending && notifications.length === 0 ? (
+          {isLoading && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
               {t("notifications.loading")}
             </div>
           ) : null}
 
-          {!notifications.length && !isPending ? (
+          {!notifications.length && !isLoading ? (
             <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center dark:border-slate-700 dark:bg-slate-900/80">
               <p className="font-medium text-slate-900">{t("notifications.allQuiet")}</p>
               <p className="mt-1 text-sm text-muted-foreground">{t("notifications.allQuietHint")}</p>

@@ -22,6 +22,7 @@ import { suggestCategoryFromNote } from "@/lib/ml/categorizer";
 import { CATEGORIES, getCategoryMeta } from "@/lib/utils/categories";
 import type { ExpenseTemplate } from "@/lib/utils/expenseTemplates";
 import { useExpenseStore } from "@/store/expenseStore";
+import { useDashboardStore } from "@/store/dashboardStore";
 
 const ReceiptScanner = dynamic(
   () => import("@/components/features/ReceiptScanner").then((module) => module.ReceiptScanner),
@@ -45,23 +46,12 @@ type BudgetSnapshot = {
   daysRemaining: number;
 };
 
-type SOSSnapshot = {
-  isActive: boolean;
-  shouldActivate: boolean;
-  severity: "warning" | "critical";
-  remainingBudget: number;
-  daysRemaining: number;
-  lockedAmount: number;
-  hasLockedFunds: boolean;
-  hasPin: boolean;
-  luxuryWarning: string | null;
-};
-
 const TREAT_CATEGORIES = new Set(["food", "cafe", "entertainment"]);
 const LUXURY_CATEGORIES = new Set(["cafe", "entertainment"]);
 
 export function AddExpenseModal() {
   const { addExpense } = useExpenses();
+  const dashboardStats = useDashboardStore((state) => state.stats);
   const isOpen = useExpenseStore((state) => state.isAddExpenseOpen);
   const draftExpense = useExpenseStore((state) => state.draftExpense);
   const closeModal = useExpenseStore((state) => state.closeAddExpenseModal);
@@ -75,7 +65,6 @@ export function AddExpenseModal() {
   const [error, setError] = useState("");
   const [showTreatCalculator, setShowTreatCalculator] = useState(false);
   const [budgetSnapshot, setBudgetSnapshot] = useState<BudgetSnapshot | null>(null);
-  const [sosSnapshot, setSosSnapshot] = useState<SOSSnapshot | null>(null);
   const [overrideEmergency, setOverrideEmergency] = useState(false);
   const [unlockPin, setUnlockPin] = useState("");
   const [unlockError, setUnlockError] = useState("");
@@ -91,6 +80,7 @@ export function AddExpenseModal() {
   const numericAmount = useMemo(() => Number(amount), [amount]);
   const isTreatCategory = TREAT_CATEGORIES.has(category);
   const isLuxuryCategory = LUXURY_CATEGORIES.has(category);
+  const sosSnapshot = dashboardStats?.sos ?? null;
   const isLuxurySpendBlocked = Boolean(sosSnapshot?.isActive && isLuxuryCategory);
 
   useEffect(() => {
@@ -105,7 +95,6 @@ export function AddExpenseModal() {
     setError("");
     setShowTreatCalculator(false);
     setBudgetSnapshot(null);
-    setSosSnapshot(null);
     setOverrideEmergency(false);
     setUnlockPin("");
     setUnlockError("");
@@ -126,23 +115,6 @@ export function AddExpenseModal() {
       setCategory(suggestion.category);
     }
   }, [categoryTouched, note]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    fetch("/api/sos", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((payload) => {
-        if (payload?.error) {
-          return;
-        }
-
-        setSosSnapshot(payload);
-      })
-      .catch(() => null);
-  }, [isOpen]);
 
   async function unlockEmergencyFunds() {
     setUnlockError("");
@@ -237,17 +209,14 @@ export function AddExpenseModal() {
     setIsLoadingTreatView(true);
 
     try {
-      const response = await fetch("/api/dashboard/stats", { cache: "no-store" });
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload) {
+      if (!dashboardStats) {
         throw new Error("Treat impact load করা যায়নি।");
       }
 
       setBudgetSnapshot({
-        dailyBudget: Number(payload.dailyBudget || 0),
-        remainingBudget: Number(payload.remainingBudget || 0),
-        daysRemaining: Number(payload.daysRemaining || 1)
+        dailyBudget: Number(dashboardStats.dailyBudget || 0),
+        remainingBudget: Number(dashboardStats.remainingBudget || 0),
+        daysRemaining: Number(dashboardStats.daysRemaining || 1)
       });
       setShowTreatCalculator(true);
     } catch (fetchError) {

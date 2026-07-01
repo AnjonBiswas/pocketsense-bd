@@ -1,48 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertBanner } from "@/components/notifications/AlertBanner";
 import { SOSMode } from "@/components/features/SOSMode";
 import { SOSModeActive } from "@/components/features/SOSModeActive";
 import { useExpenseStore } from "@/store/expenseStore";
-
-type SOSPayload = {
-  shouldActivate: boolean;
-  severity: "warning" | "critical";
-  isActive: boolean;
-  remainingBudget: number;
-  daysRemaining: number;
-  dailyBudget: number;
-  activatedTips: string[];
-  projectedSavings: number;
-  canSurvive: boolean;
-  survivalTarget: number;
-  hasLockedFunds: boolean;
-  lockedAmount: number;
-  hasPin: boolean;
-  complianceScore: number;
-  luxuryWarning: string | null;
-  periodKey?: string;
-};
+import { useDashboardStore } from "@/store/dashboardStore";
 
 export function DashboardEmergencyShell() {
-  const [state, setState] = useState<SOSPayload | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const dashboardStats = useDashboardStore((store) => store.stats);
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const showToast = useExpenseStore((store) => store.showToast);
 
-  const load = () => {
-    startTransition(async () => {
-      const response = await fetch("/api/sos", { cache: "no-store" });
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload) {
-        return;
-      }
-
-      setState(payload);
-    });
-  };
+  const state = dashboardStats?.sos ?? null;
 
   useEffect(() => {
     if (!state?.periodKey || typeof window === "undefined") {
@@ -52,10 +22,6 @@ export function DashboardEmergencyShell() {
     const stored = window.localStorage.getItem(`pocketsense-sos-dismissed:${state.periodKey}`);
     setDismissedKey(stored === "1" ? state.periodKey : null);
   }, [state?.periodKey]);
-
-  useEffect(() => {
-    load();
-  }, []);
 
   const isModalSuppressed = useMemo(() => {
     if (!state?.periodKey) {
@@ -98,7 +64,6 @@ export function DashboardEmergencyShell() {
       message: "Survival mode updated."
     });
     dismissForPeriod();
-    load();
   }
 
   async function refreshAfterActivation() {
@@ -107,10 +72,9 @@ export function DashboardEmergencyShell() {
       message: "Survival mode activated. Your budget is protected."
     });
     dismissForPeriod();
-    load();
   }
 
-  if (!state && !isPending) {
+  if (!state) {
     return null;
   }
 

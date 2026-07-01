@@ -192,7 +192,7 @@ export function LandingDashboard() {
 
   return (
     <section className="px-4 pb-8 sm:px-6 lg:px-8" lang={language}>
-      <nav className={cn("sticky top-0 z-50 mx-auto mt-3 flex w-full max-w-7xl items-center justify-between gap-3 rounded-full px-3 py-2.5 backdrop-blur-2xl sm:px-4", navShellClass)}>
+      <nav className={cn("sticky top-0 z-50 mx-auto mt-1 flex w-full max-w-7xl items-center justify-between gap-3 rounded-full px-3 py-2.5 backdrop-blur-2xl sm:px-4", navShellClass)}>
         <PocketSenseLogo
           href="/"
           size={44}
@@ -268,7 +268,7 @@ export function LandingDashboard() {
       </nav>
 
       <div className={cn("mx-auto w-full max-w-7xl overflow-hidden rounded-[2rem]", shellClass)}>
-        <div id="what" className="grid gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.78fr)] lg:px-10 lg:py-12 xl:px-12">
+        <div id="what" className="grid gap-8 px-5 py-4 sm:px-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.78fr)] lg:px-10 lg:py-6 xl:px-12">
           <div className="min-w-0 self-center">
             <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium", isDark ? "border border-white/10 bg-white/10 text-emerald-100" : "border border-emerald-200 bg-emerald-50 text-emerald-700")}>
               <Sparkles className="h-4 w-4" />

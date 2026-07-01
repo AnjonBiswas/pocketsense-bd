@@ -128,21 +128,21 @@ export function AuthShell({ mode }: { mode: AuthMode }) {
               textClassName="[&_p:first-child]:uppercase [&_p:first-child]:tracking-[0.28em] [&_p:first-child]:text-emerald-300"
             />
             <h1 className="mt-5 text-4xl font-semibold leading-tight">
-              Student money management,
+              Your student budget,
               <br />
-              now with a fully free login system.
+              finally in one calm place.
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-7 text-white/72">
-              Email, password, and Google sign-in work without any SMS gateway setup, so you can keep
-              PocketSense fully free to start.
+              Track allowance, tuition, treats, and savings without the clutter. PocketSense keeps the important
+              numbers visible, so you can decide faster and worry less.
             </p>
           </div>
 
           <div className="grid gap-3">
             {[
-              "Free on Supabase Auth",
-              "Google sign-in supported",
-              "Works with onboarding and dashboard"
+              "Quick sign in with email, password, or Google",
+              "Built for allowance, expenses, and savings goals",
+              "Starts clean, then grows with your daily money habits"
             ].map((item) => (
               <div key={item} className="rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/85">
                 {item}

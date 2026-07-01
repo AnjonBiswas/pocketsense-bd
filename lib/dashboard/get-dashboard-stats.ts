@@ -45,6 +45,7 @@ export type DashboardStats = {
     hasPin: boolean;
     complianceScore: number;
     luxuryWarning: string | null;
+    periodKey?: string;
   };
   alerts: Array<{
     type: "warning" | "info" | "success";

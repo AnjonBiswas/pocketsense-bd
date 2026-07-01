@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import useSWR from "swr";
+import { useEffect } from "react";
 import { DailyBudgetCard } from "@/components/dashboard/DailyBudgetCard";
 import { MonthProgressCard } from "@/components/dashboard/MonthProgressCard";
 import { QuickExpenseButtons } from "@/components/dashboard/QuickExpenseButtons";
@@ -10,8 +10,8 @@ import { AlertsCard } from "@/components/dashboard/AlertsCard";
 import { DashboardCardSkeleton } from "@/components/dashboard/DashboardCardSkeleton";
 import { ExpenseStoreHydrator } from "@/components/dashboard/ExpenseStoreHydrator";
 import type { DashboardStats } from "@/lib/dashboard/get-dashboard-stats";
-import { jsonFetcher } from "@/lib/fetcher";
 import type { Expense } from "@/store/expenseStore";
+import { useDashboardStore } from "@/store/dashboardStore";
 
 const TopCategoriesCard = dynamic(
   () => import("@/components/dashboard/TopCategoriesCard").then((module) => module.TopCategoriesCard),
@@ -34,36 +34,33 @@ export function DashboardOverviewClient({
   initialStats: DashboardStats;
   initialExpenses: Expense[];
 }) {
-  const { data: stats } = useSWR<DashboardStats>("/api/dashboard/stats", jsonFetcher, {
-    fallbackData: initialStats,
-    refreshInterval: 60000,
-    revalidateOnFocus: false
-  });
-
-  const safeStats = stats || initialStats;
+  const setStats = useDashboardStore((state) => state.setStats);
+  useEffect(() => {
+    setStats(initialStats);
+  }, [initialStats, setStats]);
 
   return (
     <section className="space-y-4">
       <ExpenseStoreHydrator initialExpenses={initialExpenses} />
 
       <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <DailyBudgetCard dailyBudget={safeStats.dailyBudget} spentToday={safeStats.spentToday} />
+        <DailyBudgetCard dailyBudget={initialStats.dailyBudget} spentToday={initialStats.spentToday} />
         <MonthProgressCard
-          daysElapsed={safeStats.daysElapsed}
-          daysInMonth={safeStats.daysInMonth}
-          totalExpenses={safeStats.totalExpenses}
-          monthlyLimit={safeStats.monthlyLimit}
-          totalIncome={safeStats.totalIncome}
-          savingsGoal={safeStats.savingsGoal}
-          emergencyReserve={safeStats.emergencyReserve}
+          daysElapsed={initialStats.daysElapsed}
+          daysInMonth={initialStats.daysInMonth}
+          totalExpenses={initialStats.totalExpenses}
+          monthlyLimit={initialStats.monthlyLimit}
+          totalIncome={initialStats.totalIncome}
+          savingsGoal={initialStats.savingsGoal}
+          emergencyReserve={initialStats.emergencyReserve}
         />
       </div>
 
       <QuickExpenseButtons />
 
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <StreakDisplay streak={safeStats.streak} monthlyRank={safeStats.monthlyRank} />
-        <AlertsCard alerts={safeStats.alerts} />
+        <StreakDisplay streak={initialStats.streak} monthlyRank={initialStats.monthlyRank} />
+        <AlertsCard alerts={initialStats.alerts} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
