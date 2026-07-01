@@ -354,7 +354,7 @@ export function LandingDashboard() {
           </div>
         </div>
 
-        <div className={cn("flex snap-x snap-mandatory gap-3 overflow-x-auto border-t px-5 pb-2 pt-0 sm:grid sm:overflow-hidden sm:px-0 sm:pb-0 sm:pt-0 sm:grid-cols-3 sm:gap-0", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70")}>
+        <div className={cn("grid grid-cols-3 gap-2 overflow-hidden border-t px-2 pb-1 pt-0 sm:grid sm:grid-cols-3 sm:gap-0 sm:px-0 sm:pb-0 sm:pt-0", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70")}>
           {statCards.map((stat) => {
             const Icon = stat.icon;
 
@@ -362,34 +362,34 @@ export function LandingDashboard() {
               <div
                 key={stat.label}
                 className={cn(
-                  "group relative min-h-[8.5rem] w-[78vw] flex-none snap-start overflow-hidden p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[10rem] sm:w-auto sm:flex-1 sm:p-6",
+                  "group relative min-h-[6.75rem] overflow-hidden p-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[10rem] sm:p-6",
                   isDark ? "border-white/10" : "border-slate-200"
                 )}
               >
                 <div className={cn("absolute inset-x-0 top-0 h-1", stat.fillClass)} aria-hidden="true" />
                 <div className={cn("absolute -right-10 -top-10 h-28 w-28 rounded-full blur-3xl transition-opacity duration-300 group-hover:opacity-100", stat.orbClass, isDark ? "opacity-50" : "opacity-70")} aria-hidden="true" />
                 <div className="relative flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className={cn("text-sm font-medium", subduedClass)}>{stat.label}</p>
-                      <p className={cn("mt-1.5 text-2xl font-semibold tracking-tight sm:mt-2 sm:text-4xl", isDark ? "text-white" : "text-slate-950")}>{stat.value}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={cn("text-[0.68rem] font-medium leading-none sm:text-sm", subduedClass)}>{stat.label}</p>
+                      <p className={cn("mt-1 text-lg font-semibold tracking-tight sm:mt-2 sm:text-4xl", isDark ? "text-white" : "text-slate-950")}>{stat.value}</p>
                     </div>
-                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[1.05rem] transition-transform duration-300 group-hover:scale-110 sm:h-11 sm:w-11 sm:rounded-[1.1rem]", isDark ? "bg-slate-950/80 text-white" : "bg-white text-slate-950 shadow-sm")}>
-                      <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] transition-transform duration-300 group-hover:scale-110 sm:h-11 sm:w-11 sm:rounded-[1.1rem]", isDark ? "bg-slate-950/80 text-white" : "bg-white text-slate-950 shadow-sm")}>
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2 sm:mt-4">
-                    <span className={cn("rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em] sm:px-2.5 sm:py-1 sm:text-[0.7rem]", stat.chipClass)}>
+                  <div className="mt-2 flex items-center gap-2 sm:mt-4">
+                    <span className={cn("rounded-full px-1.5 py-0.5 text-[0.52rem] font-semibold uppercase tracking-[0.14em] sm:px-2.5 sm:py-1 sm:text-[0.7rem]", stat.chipClass)}>
                       {stat.chip}
                     </span>
                   </div>
 
-                  <div className={cn("mt-3 h-1.5 overflow-hidden rounded-full sm:mt-4 sm:h-2", stat.trackClass)}>
+                  <div className={cn("mt-2 h-1 overflow-hidden rounded-full sm:mt-4 sm:h-2", stat.trackClass)}>
                     <div className={cn("h-full rounded-full transition-all duration-700 group-hover:w-full", stat.fillClass)} style={{ width: stat.fillWidth }} aria-hidden="true" />
                   </div>
 
-                  <p className={cn("mt-3 text-xs leading-5 sm:mt-4 sm:text-sm sm:leading-6", subduedClass)}>{stat.note}</p>
+                  <p className={cn("mt-2 text-[0.62rem] leading-4 sm:mt-4 sm:text-sm sm:leading-6", subduedClass)}>{stat.note}</p>
                 </div>
               </div>
             );
