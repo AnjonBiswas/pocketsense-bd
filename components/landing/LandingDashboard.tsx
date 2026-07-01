@@ -401,7 +401,7 @@ export function LandingDashboard() {
         <section
           id="gain"
           className={cn(
-            "scroll-mt-28 rounded-[2rem] border px-5 py-10 shadow-[0_24px_80px_rgba(15,23,42,0.06)] sm:scroll-mt-32 sm:px-6 lg:scroll-mt-36 lg:px-8",
+            "mt-6 scroll-mt-28 rounded-[2rem] border px-5 py-10 shadow-[0_24px_80px_rgba(15,23,42,0.06)] sm:mt-8 sm:scroll-mt-32 sm:px-6 lg:mt-10 lg:scroll-mt-36 lg:px-8",
             isDark
               ? "border-white/10 bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.96)_0%,rgba(10,14,28,0.98)_45%,rgba(4,6,16,1)_100%)] shadow-[0_30px_90px_rgba(0,0,0,0.28)]"
               : "border-slate-200 bg-gradient-to-b from-white/85 to-white/45"
@@ -456,7 +456,7 @@ export function LandingDashboard() {
           </div>
         </section>
 
-        <section id="why" className="scroll-mt-28 grid gap-6 rounded-[2rem] border border-slate-200 bg-white/55 px-5 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-950/20 sm:scroll-mt-32 sm:px-6 lg:scroll-mt-36 lg:grid-cols-[0.86fr_1fr] lg:px-8">
+        <section id="why" className="mt-6 scroll-mt-28 grid gap-6 rounded-[2rem] border border-slate-200 bg-white/55 px-5 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-950/20 sm:mt-8 sm:scroll-mt-32 sm:px-6 lg:mt-10 lg:scroll-mt-36 lg:grid-cols-[0.86fr_1fr] lg:px-8">
           <div className="lg:sticky lg:top-28 lg:self-start">
             <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "bg-white/10 text-emerald-100" : "bg-emerald-50 text-emerald-700")}>
               <ShieldCheck className="h-3.5 w-3.5" />
