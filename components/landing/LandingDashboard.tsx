@@ -172,6 +172,8 @@ const showcaseImages = [
   { src: "/img3.svg", alt: "PocketSense spending insight screen" },
   { src: "/img4.svg", alt: "PocketSense student finance report screen" }
 ] as const;
+const revealClass =
+  "opacity-0 translate-y-6 blur-sm transition-all duration-700 ease-out will-change-transform data-[visible=true]:translate-y-0 data-[visible=true]:opacity-100 data-[visible=true]:blur-0";
 
 export function LandingDashboard() {
   const { language, setLanguage } = useLanguage();
@@ -237,6 +239,41 @@ export function LandingDashboard() {
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+
+    if (!elements.length) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      elements.forEach((element) => {
+        element.dataset.visible = "true";
+      });
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const element = entry.target as HTMLElement;
+            element.dataset.visible = "true";
+            observer.unobserve(element);
+          }
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: "0px 0px -8% 0px"
+      }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section className="px-4 pb-8 sm:px-6 lg:px-8" lang={language}>
@@ -305,7 +342,7 @@ export function LandingDashboard() {
 
       <div className={cn("mx-auto w-full max-w-7xl overflow-hidden rounded-[2rem]", shellClass)}>
         <div id="what" className="scroll-mt-28 grid gap-8 px-5 py-11 sm:scroll-mt-32 sm:px-8 lg:scroll-mt-36 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.78fr)] lg:px-5 lg:py-1 xl:px-12">
-          <div className="min-w-0 self-center">
+          <div className={cn("min-w-0 self-center", revealClass)} data-reveal>
             <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium", isDark ? "border border-white/10 bg-white/10 text-emerald-100" : "border border-emerald-200 bg-emerald-50 text-emerald-700")}>
               <Sparkles className="h-4 w-4" />
               {text.badge}
@@ -332,7 +369,7 @@ export function LandingDashboard() {
             </div>
           </div>
 
-          <div className="relative min-h-[22rem] self-center sm:min-h-[26rem] lg:min-h-[31rem]">
+          <div className={cn("relative min-h-[22rem] self-center sm:min-h-[26rem] lg:min-h-[31rem]", revealClass)} data-reveal>
             <div className="relative mx-auto aspect-square w-full max-w-[34rem] overflow-visible">
               {showcaseImages.map((image, index) => (
                 <div
@@ -354,7 +391,7 @@ export function LandingDashboard() {
           </div>
         </div>
 
-        <div className={cn("grid grid-cols-3 gap-2 overflow-hidden border-t px-2 pb-1 pt-0 sm:grid sm:grid-cols-3 sm:gap-0 sm:px-0 sm:pb-0 sm:pt-0", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70")}>
+        <div className={cn("grid grid-cols-3 gap-2 overflow-hidden border-t px-2 pb-1 pt-0 sm:grid sm:grid-cols-3 sm:gap-0 sm:px-0 sm:pb-0 sm:pt-0", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70", revealClass)} data-reveal>
           {statCards.map((stat) => {
             const Icon = stat.icon;
 
@@ -400,14 +437,16 @@ export function LandingDashboard() {
       <div className="mx-auto w-full max-w-7xl">
         <section
           id="gain"
+          data-reveal
           className={cn(
             "mt-6 scroll-mt-28 rounded-[2rem] border px-5 py-10 shadow-[0_24px_80px_rgba(15,23,42,0.06)] sm:mt-8 sm:scroll-mt-32 sm:px-6 lg:mt-10 lg:scroll-mt-36 lg:px-8",
             isDark
               ? "border-white/10 bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.96)_0%,rgba(10,14,28,0.98)_45%,rgba(4,6,16,1)_100%)] shadow-[0_30px_90px_rgba(0,0,0,0.28)]"
-              : "border-slate-200 bg-gradient-to-b from-white/85 to-white/45"
+              : "border-slate-200 bg-gradient-to-b from-white/85 to-white/45",
+            revealClass
           )}
         >
-          <div className="max-w-2xl">
+          <div className={cn("max-w-2xl", revealClass)} data-reveal>
             <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "bg-white/10 text-emerald-100" : "bg-emerald-50 text-emerald-700")}>
               <Sparkles className="h-3.5 w-3.5" />
               {text.gainEyebrow}
@@ -432,6 +471,8 @@ export function LandingDashboard() {
                     "group relative overflow-hidden rounded-[1.8rem] border bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-5",
                     isDark ? "border-white/10 bg-white/[0.04] hover:border-white/20" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/10"
                   )}
+                  data-reveal
+                  style={{ transitionDelay: `${index * 110}ms` }}
                 >
                   <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300 group-hover:opacity-100", accent)} aria-hidden="true" />
                   <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-current opacity-[0.04] blur-3xl transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
@@ -456,8 +497,8 @@ export function LandingDashboard() {
           </div>
         </section>
 
-        <section id="why" className="mt-6 scroll-mt-28 grid gap-6 rounded-[2rem] border border-slate-200 bg-white/55 px-5 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-950/20 sm:mt-8 sm:scroll-mt-32 sm:px-6 lg:mt-10 lg:scroll-mt-36 lg:grid-cols-[0.86fr_1fr] lg:px-8">
-          <div className="lg:sticky lg:top-28 lg:self-start">
+        <section id="why" className={cn("mt-6 scroll-mt-28 grid gap-6 rounded-[2rem] border border-slate-200 bg-white/55 px-5 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-950/20 sm:mt-8 sm:scroll-mt-32 sm:px-6 lg:mt-10 lg:scroll-mt-36 lg:grid-cols-[0.86fr_1fr] lg:px-8", revealClass)} data-reveal>
+          <div className={cn("lg:sticky lg:top-28 lg:self-start", revealClass)} data-reveal>
             <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "bg-white/10 text-emerald-100" : "bg-emerald-50 text-emerald-700")}>
               <ShieldCheck className="h-3.5 w-3.5" />
               {text.whyEyebrow}
@@ -476,6 +517,8 @@ export function LandingDashboard() {
                   "group relative overflow-hidden rounded-[1.5rem] border p-3.5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-5",
                   isDark ? "border-white/10 bg-white/[0.04] hover:border-white/20" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-slate-900/10"
                 )}
+                data-reveal
+                style={{ transitionDelay: `${index * 100}ms` }}
               >
                 <div className={cn("absolute inset-y-0 left-0 w-1", ["bg-emerald-400", "bg-sky-400", "bg-amber-400"][index])} aria-hidden="true" />
                 <div className="relative flex gap-4">
@@ -494,8 +537,8 @@ export function LandingDashboard() {
           </div>
         </section>
 
-        <section className="grid gap-5 border-t border-slate-200 py-10 dark:border-slate-700 lg:grid-cols-[1fr_0.8fr] lg:items-center">
-          <div>
+        <section className={cn("grid gap-5 border-t border-slate-200 py-10 dark:border-slate-700 lg:grid-cols-[1fr_0.8fr] lg:items-center", revealClass)} data-reveal>
+          <div className={revealClass} data-reveal>
             <p className="text-sm font-semibold uppercase text-primary">{text.insideEyebrow}</p>
             <h2 className={cn("mt-2 text-3xl font-semibold leading-tight sm:text-4xl", mutedHeadingClass)}>{text.insideTitle}</h2>
           </div>
@@ -513,6 +556,8 @@ export function LandingDashboard() {
                     isDark ? "border-white/10 hover:border-white/20" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/10"
                   )}
                   tabIndex={0}
+                  data-reveal
+                  style={{ transitionDelay: `${index * 90}ms` }}
                 >
                   <div className="relative flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] bg-secondary text-secondary-foreground transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105">
@@ -538,8 +583,8 @@ export function LandingDashboard() {
           </div>
         </section>
 
-        <section className={bottomBarClass}>
-          <div className="max-w-2xl">
+        <section className={cn(bottomBarClass, revealClass)} data-reveal>
+          <div className={cn("max-w-2xl", revealClass)} data-reveal>
             <div className={cn("mb-3 flex items-center gap-2", isDark ? "text-emerald-200" : "text-emerald-700")}>
               <CheckCircle2 className="h-5 w-5" />
               <span className="text-sm font-semibold">{text.finalLabel}</span>
