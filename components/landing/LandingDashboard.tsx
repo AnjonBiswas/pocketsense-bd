@@ -197,6 +197,32 @@ export function LandingDashboard() {
     "Built to stop quiet budget drift",
     "Built for upcoming campus expenses"
   ];
+  const featureAccents = [
+    {
+      baseLight: "radial-gradient(circle at top left, rgba(16, 185, 129, 0.03), transparent 46%), linear-gradient(135deg, rgba(255,255,255,0.98), rgba(236,253,245,0.92))",
+      baseDark: "radial-gradient(circle at top left, rgba(16,185,129,0.18), transparent 42%), linear-gradient(135deg, rgba(15,23,42,0.90), rgba(2,6,23,0.80))",
+      hoverLight: "radial-gradient(circle at top left, rgba(5,150,105,0.28), transparent 38%), linear-gradient(135deg, rgba(240,253,250,0.98) 0%, rgba(209,250,229,0.88) 54%, rgba(167,243,208,0.72) 100%)",
+      hoverDark: "radial-gradient(circle at top left, rgba(16,185,129,0.32), transparent 34%), linear-gradient(135deg, rgba(6,95,70,0.72) 0%, rgba(2,6,23,0.90) 56%, rgba(15,23,42,0.78) 100%)"
+    },
+    {
+      baseLight: "radial-gradient(circle at top left, rgba(14,165,233,0.14), transparent 46%), linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,249,255,0.92))",
+      baseDark: "radial-gradient(circle at top left, rgba(14,165,233,0.18), transparent 42%), linear-gradient(135deg, rgba(15,23,42,0.90), rgba(2,6,23,0.80))",
+      hoverLight: "radial-gradient(circle at top left, rgba(2,132,199,0.28), transparent 38%), linear-gradient(135deg, rgba(248,250,252,0.98) 0%, rgba(224,242,254,0.88) 54%, rgba(186,230,253,0.72) 100%)",
+      hoverDark: "radial-gradient(circle at top left, rgba(14,165,233,0.32), transparent 34%), linear-gradient(135deg, rgba(7,89,133,0.72) 0%, rgba(2,6,23,0.90) 56%, rgba(15,23,42,0.78) 100%)"
+    },
+    {
+      baseLight: "radial-gradient(circle at top left, rgba(139,92,246,0.14), transparent 46%), linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,243,255,0.92))",
+      baseDark: "radial-gradient(circle at top left, rgba(139,92,246,0.18), transparent 42%), linear-gradient(135deg, rgba(15,23,42,0.90), rgba(2,6,23,0.80))",
+      hoverLight: "radial-gradient(circle at top left, rgba(109,40,217,0.28), transparent 38%), linear-gradient(135deg, rgba(250,245,255,0.98) 0%, rgba(237,233,254,0.88) 54%, rgba(221,214,254,0.72) 100%)",
+      hoverDark: "radial-gradient(circle at top left, rgba(139,92,246,0.32), transparent 34%), linear-gradient(135deg, rgba(91,33,182,0.72) 0%, rgba(2,6,23,0.90) 56%, rgba(15,23,42,0.78) 100%)"
+    },
+    {
+      baseLight: "radial-gradient(circle at top left, rgba(245,158,11,0.14), transparent 46%), linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,251,235,0.92))",
+      baseDark: "radial-gradient(circle at top left, rgba(245,158,11,0.18), transparent 42%), linear-gradient(135deg, rgba(15,23,42,0.90), rgba(2,6,23,0.80))",
+      hoverLight: "radial-gradient(circle at top left, rgba(217,119,6,0.28), transparent 38%), linear-gradient(135deg, rgba(255,251,240,0.98) 0%, rgba(254,240,138,0.58) 54%, rgba(193, 169, 52, 0.3) 100%)",
+      hoverDark: "radial-gradient(circle at top left, rgba(245,158,11,0.32), transparent 34%), linear-gradient(135deg, rgba(146,64,14,0.72) 0%, rgba(2,6,23,0.90) 56%, rgba(15,23,42,0.78) 100%)"
+    }
+  ];
   const statCards = text.stats.map(([label, value, note], index) => {
     const meta = [
       {
@@ -521,6 +547,17 @@ export function LandingDashboard() {
                 style={{ transitionDelay: `${index * 100}ms` }}
               >
                 <div className={cn("absolute inset-y-0 left-0 w-1", ["bg-emerald-400", "bg-sky-400", "bg-amber-400"][index])} aria-hidden="true" />
+                <div
+                  className={cn(
+                    "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300 group-hover:opacity-100",
+                    [
+                      "from-emerald-400/15 via-emerald-300/8 to-transparent",
+                      "from-sky-400/15 via-sky-300/8 to-transparent",
+                      "from-amber-400/15 via-amber-300/8 to-transparent"
+                    ][index]
+                  )}
+                  aria-hidden="true"
+                />
                 <div className="relative flex gap-4">
                   <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] text-sm font-semibold sm:h-10 sm:w-10", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
                     {index + 1}
@@ -550,17 +587,30 @@ export function LandingDashboard() {
 
               return (
                 <div
-                  key={feature}
-                  className={cn(
-                    "group relative self-start overflow-hidden rounded-[1.5rem] border bg-card p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus-within:-translate-y-1 focus-within:shadow-xl sm:min-h-[4.5rem] sm:p-4",
-                    isDark ? "border-white/10 hover:border-white/20" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/10"
+                key={feature}
+                className={cn(
+                    "group relative self-start overflow-hidden rounded-[1.5rem] border p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-900/15 focus-within:-translate-y-1 focus-within:shadow-2xl sm:min-h-[4.5rem] sm:p-4",
+                    isDark ? "border-white/10 hover:border-white/25" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/15"
                   )}
                   tabIndex={0}
                   data-reveal
-                  style={{ transitionDelay: `${index * 90}ms` }}
+                  style={{
+                    backgroundImage: isDark ? featureAccents[index].baseDark : featureAccents[index].baseLight,
+                    transitionDelay: `${index * 90}ms`
+                  }}
                 >
-                  <div className="relative flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] bg-secondary text-secondary-foreground transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105">
+                <div
+                    className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:saturate-200 group-hover:scale-[1.01] group-focus-within:opacity-100 group-focus-within:saturate-200 group-focus-within:scale-[1.01]"
+                    style={{
+                      backgroundImage: isDark ? featureAccents[index].hoverDark : featureAccents[index].hoverLight,
+                      backgroundPosition: "center",
+                      backgroundSize: "100% 100%",
+                      transform: "none"
+                    }}
+                    aria-hidden="true"
+                  />
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] border transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-focus-within:scale-110 group-focus-within:shadow-lg", isDark ? "border-white/10 bg-slate-950 text-white" : "border-white/70 bg-white text-slate-950 shadow-sm")}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
