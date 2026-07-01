@@ -28,7 +28,6 @@ import { cn } from "@/lib/utils";
 const copy = {
   en: {
     navSubtitle: "Student money clarity",
-    navItems: ["What is it", "What you gain", "Why this"],
     language: "বাংলা",
     themeLight: "Light",
     themeDark: "Dark",
@@ -36,10 +35,9 @@ const copy = {
     signup: "Start free",
     badge: "Built for Bangladeshi students",
     title: "PocketSense",
-    headline: "Understand your money before the month gets confusing.",
+    headline: "See your money clearly before it turns into guesswork.",
     intro:
-      "PocketSense is a student finance dashboard that turns allowance, tuition income, daily spending, upcoming bills, and shared plans into clear decisions.",
-    primaryCta: "Create your budget profile",
+"PocketSense: Smart finance dashboard for students. Tracks income, expenses, bills, and squad spending. Provides real-time budgets, alerts, and AI-driven financial guidance.",    primaryCta: "Create your budget profile",
     secondaryCta: "See dashboard",
     previewLabel: "Live budget signal",
     previewTitle: "Spend under Tk 240 today",
@@ -61,58 +59,62 @@ const copy = {
       ["Study", "Tk 2,240", "Tk 2,750", "81%"]
     ],
     gainEyebrow: "What you gain",
-    gainTitle: "A useful answer before every spend.",
+    gainTitle: "Sharper decisions before money moves.",
     gains: [
       {
-        title: "Know what is safe today",
-        text: "Get a daily limit based on your allowance, bills, savings target, and remaining days."
+        title: "Know the safe number",
+        text: "See a daily limit shaped by allowance, bills, savings goals, and the days still left in the month."
       },
       {
-        title: "Catch money leaks early",
-        text: "See when meals, rides, subscriptions, printing, or treats are quietly crossing the line."
+        title: "Spot leaks while they are small",
+        text: "Catch meals, rides, subscriptions, printing, and tiny treats before they quietly bend the budget."
       },
       {
         title: "Stay ready for real student costs",
-        text: "Hostel fees, mobile data, exam forms, books, and squad splits stay visible before they hurt."
+        text: "Keep hostel fees, mobile data, exam forms, books, and squad splits visible before they become a problem."
       }
     ],
     whyEyebrow: "Why this exists",
-    whyTitle: "Student budgets break differently.",
+    whyTitle: "Student money is messy in the real world.",
     reasons: [
-      "Money comes from different places: parents, tuition, part-time work, scholarships, and emergency support.",
-      "The problem is rarely one big expense. It is usually small daily choices that add up silently.",
-      "PocketSense does not only record what happened. It explains what your next smart move should be."
+      "Money arrives from different places: parents, tuition, part-time work, scholarships, and one-off help.",
+      "The problem is rarely one huge expense. It is the everyday choices that quietly pile up.",
+      "PocketSense does not stop at tracking. It turns that noise into the next smart move."
     ],
     insideEyebrow: "Inside PocketSense",
-    insideTitle: "Track, understand, and act from one place.",
+    insideTitle: "Track, understand, and act from one calm place.",
     features: ["Expense tracking", "Budget alerts", "Squad splitting", "Reports"],
+    featureDetails: [
+      "Log each expense by category, note, and time so you can see where money actually goes.",
+      "Get alerts when spending moves too fast, so you can react before the month gets tight.",
+      "Split shared costs with friends and keep every group expense clear and fair.",
+      "Turn your spending into simple reports that show trends, patterns, and savings gaps."
+    ],
     finalLabel: "Free student start",
-    finalTitle: "Create a profile, set your allowance, and get a useful daily limit in minutes.",
+    finalTitle: "Create a profile, set your allowance, and get a smart daily limit in minutes.",
     blogText: "Read student money guides"
   },
   bn: {
-    navSubtitle: "শিক্ষার্থীদের টাকা বোঝার সহজ জায়গা",
-    navItems: ["এটা কী", "আপনি কী পাবেন", "কেন দরকার"],
+    navSubtitle: "শিক্ষার্থীদের টাকা বোঝার স্মার্ট জায়গা",
     language: "English",
     themeLight: "লাইট",
     themeDark: "ডার্ক",
     login: "লগইন",
     signup: "ফ্রি শুরু",
-    badge: "বাংলাদেশের শিক্ষার্থীদের জন্য তৈরি",
+    badge: "বাংলাদেশি শিক্ষার্থীদের জন্য বানানো",
     title: "পকেটসেন্স",
-    headline: "মাস জটিল হওয়ার আগেই নিজের টাকার অবস্থা বুঝুন।",
+    headline: "টাকা অনুমান নয়, পরিষ্কার সিদ্ধান্তে দেখুন।",
     intro:
-      "PocketSense হলো শিক্ষার্থীদের জন্য personal finance dashboard। allowance, tuition income, daily খরচ, upcoming bill আর friends/squad plan একসাথে বুঝে সহজ decision দেয়।",
-    primaryCta: "Budget profile তৈরি করুন",
+"PocketSense শিক্ষার্থীদের স্মার্ট ফিন্যান্স প্ল্যাটফর্ম। আয়-ব্যয়-বিল-গ্রুপ প্ল্যান এক জায়গায়। রিয়েল-টাইম বাজেট, স্মার্ট অ্যালার্ট এবং AI পরামর্শ দিয়ে সঠিক আর্থিক সিদ্ধান্তে সাহায্য করে।।"  ,  primaryCta: "Budget profile তৈরি করুন",
     secondaryCta: "Dashboard দেখুন",
     previewLabel: "লাইভ বাজেট সিগন্যাল",
     previewTitle: "আজ Tk 240-এর মধ্যে খরচ রাখুন",
     previewHint:
-      "পরের ৫ class day lunch Tk 160-এর মধ্যে রাখলে hostel fee আর একবার squad dinner-এর জায়গা থাকবে।",
+      "আগামী ৫ class day lunch Tk 160-এর মধ্যে রাখলে hostel fee আর একবার squad dinner-এর জায়গা থাকবে।",
     stats: [
       ["আজ safe spend", "Tk 240", "bill ও savings বাদ দিয়ে"],
       ["মাস বাকি", "37%", "আর ১১ দিন বাকি"],
-      ["Risk দেখা গেছে", "Food", "খরচ দ্রুত বাড়ছে"]
+      ["Risk ধরা গেছে", "Food", "খরচ দ্রুত বাড়ছে"]
     ],
     snapshot: [
       ["Allowance", "Tk 18,000"],
@@ -125,11 +127,11 @@ const copy = {
       ["Study", "Tk 2,240", "Tk 2,750", "81%"]
     ],
     gainEyebrow: "আপনি কী পাবেন",
-    gainTitle: "প্রতিটি খরচের আগে পরিষ্কার উত্তর।",
+    gainTitle: "প্রতিটি খরচের আগে আরও পরিষ্কার উত্তর।",
     gains: [
       {
-        title: "আজ কত খরচ safe বুঝবেন",
-        text: "Allowance, bill, savings target আর বাকি দিনের উপর ভিত্তি করে daily limit পাবেন।"
+        title: "আজ কতটা খরচ safe, বুঝবেন",
+        text: "Allowance, bill, savings target আর বাকি দিনের ওপর ভিত্তি করে daily limit পাবেন।"
       },
       {
         title: "কোথায় টাকা leak হচ্ছে ধরতে পারবেন",
@@ -141,17 +143,23 @@ const copy = {
       }
     ],
     whyEyebrow: "কেন এটা দরকার",
-    whyTitle: "শিক্ষার্থীদের budget ভাঙে আলাদা ভাবে।",
+    whyTitle: "শিক্ষার্থীদের budget সাধারণত ছোট ছোট জায়গায় ভাঙে।",
     reasons: [
       "টাকা আসে ভিন্ন ভিন্ন জায়গা থেকে: parents, tuition, part-time work, scholarship বা emergency support।",
-      "সমস্যা সাধারণত এক বড় খরচ না। ছোট ছোট daily choice চুপচাপ month-এর budget নষ্ট করে।",
-      "PocketSense শুধু পুরনো খরচ record করে না। পরের smart move কী হওয়া উচিত সেটাও বুঝায়।"
+      "সমস্যা সাধারণত এক বড় খরচে না। ছোট ছোট daily choice চুপচাপ মাসের budget নষ্ট করে।",
+      "PocketSense শুধু পুরনো খরচ record করে না। পরের smart move কী হওয়া উচিত সেটাও বুঝিয়ে দেয়।"
     ],
     insideEyebrow: "PocketSense-এর ভেতরে",
     insideTitle: "Track, understand, and act - সব এক জায়গায়।",
     features: ["Expense tracking", "Budget alerts", "Squad splitting", "Reports"],
+    featureDetails: [
+      "প্রতিটি খরচ category, note আর time সহ নথিভুক্ত করুন, যাতে টাকা কোথায় যাচ্ছে স্পষ্ট দেখা যায়।",
+      "খরচ খুব দ্রুত বাড়তে থাকলে alert পাবেন, যাতে মাস শেষ হওয়ার আগেই ব্যবস্থা নিতে পারেন।",
+      "বন্ধুদের সাথে shared cost ভাগ করে নিন, আর প্রতিটি group expense পরিষ্কার ও ন্যায্য রাখুন।",
+      "আপনার খরচকে সহজ report-এ বদলে trend, pattern আর savings gap এক নজরে দেখুন।"
+    ],
     finalLabel: "ফ্রি student start",
-    finalTitle: "Profile তৈরি করুন, allowance সেট করুন, আর কয়েক মিনিটেই useful daily limit পান।",
+    finalTitle: "Profile তৈরি করুন, allowance সেট করুন, আর কয়েক মিনিটেই smart daily limit পান।",
     blogText: "Student money guide পড়ুন"
   }
 } as const;
@@ -179,12 +187,52 @@ export function LandingDashboard() {
   const mutedClass = isDark ? "text-white/68" : "text-slate-700";
   const subduedClass = isDark ? "text-white/55" : "text-slate-500";
   const mutedHeadingClass = isDark ? "text-white" : "text-slate-950";
-  const sectionCardClass = isDark
-    ? "group rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-    : "group rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10";
   const bottomBarClass = isDark
     ? "rounded-[2rem] bg-slate-950 px-5 py-6 text-white shadow-xl shadow-slate-900/15 sm:px-6 lg:flex lg:items-center lg:justify-between"
     : "rounded-[2rem] border border-slate-200 bg-white px-5 py-6 text-slate-950 shadow-xl shadow-slate-900/10 sm:px-6 lg:flex lg:items-center lg:justify-between";
+  const gainFooters = [
+    "Built to protect today's spending",
+    "Built to stop quiet budget drift",
+    "Built for upcoming campus expenses"
+  ];
+  const statCards = text.stats.map(([label, value, note], index) => {
+    const meta = [
+      {
+        icon: ShieldCheck,
+        chip: "protected today",
+        chipClass: isDark ? "bg-emerald-400/15 text-emerald-200" : "bg-emerald-100 text-emerald-700",
+        orbClass: isDark ? "bg-emerald-300/15" : "bg-emerald-200/70",
+        trackClass: isDark ? "bg-emerald-300/15" : "bg-emerald-100",
+        fillClass: "bg-emerald-400",
+        fillWidth: "72%"
+      },
+      {
+        icon: TrendingDown,
+        chip: "month momentum",
+        chipClass: isDark ? "bg-sky-400/15 text-sky-200" : "bg-sky-100 text-sky-700",
+        orbClass: isDark ? "bg-sky-300/15" : "bg-sky-200/70",
+        trackClass: isDark ? "bg-sky-300/15" : "bg-sky-100",
+        fillClass: "bg-sky-400",
+        fillWidth: "37%"
+      },
+      {
+        icon: BellRing,
+        chip: "watching closely",
+        chipClass: isDark ? "bg-amber-400/15 text-amber-200" : "bg-amber-100 text-amber-700",
+        orbClass: isDark ? "bg-amber-300/15" : "bg-amber-200/70",
+        trackClass: isDark ? "bg-amber-300/15" : "bg-amber-100",
+        fillClass: "bg-amber-400",
+        fillWidth: "64%"
+      }
+    ][index];
+
+    return { label, value, note, ...meta };
+  });
+  const reasonLabels = [
+    "Multiple income streams",
+    "Small leaks add up",
+    "Decisions, not just records"
+  ];
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -201,18 +249,6 @@ export function LandingDashboard() {
           textClassName={isDark ? "[&_p:first-child]:text-white [&_p:last-child]:text-white/70" : "[&_p:first-child]:text-slate-950 [&_p:last-child]:text-slate-500"}
           priority
         />
-
-        <div className={cn("hidden items-center gap-1 rounded-full p-1.5 lg:flex", isDark ? "border border-white/10 bg-white/[0.08]" : "border border-slate-200 bg-slate-50")}>
-          {text.navItems.map((item, index) => (
-            <a
-              key={item}
-              href={["#what", "#gain", "#why"][index]}
-              className={cn("rounded-full px-3.5 py-2 text-sm transition-all duration-300 hover:-translate-y-0.5", isDark ? "text-white/85 hover:bg-white/12 hover:text-white" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950")}
-            >
-              {item}
-            </a>
-          ))}
-        </div>
 
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -268,7 +304,7 @@ export function LandingDashboard() {
       </nav>
 
       <div className={cn("mx-auto w-full max-w-7xl overflow-hidden rounded-[2rem]", shellClass)}>
-        <div id="what" className="grid gap-8 px-5 py-4 sm:px-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.78fr)] lg:px-10 lg:py-6 xl:px-12">
+        <div id="what" className="scroll-mt-28 grid gap-8 px-5 py-11 sm:scroll-mt-32 sm:px-8 lg:scroll-mt-36 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.78fr)] lg:px-5 lg:py-1 xl:px-12">
           <div className="min-w-0 self-center">
             <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium", isDark ? "border border-white/10 bg-white/10 text-emerald-100" : "border border-emerald-200 bg-emerald-50 text-emerald-700")}>
               <Sparkles className="h-4 w-4" />
@@ -318,54 +354,141 @@ export function LandingDashboard() {
           </div>
         </div>
 
-        <div className={cn("grid border-t sm:grid-cols-3", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/60")}>
-          {text.stats.map(([label, value, note]) => (
-            <div key={label} className={cn("p-5 sm:border-r last:border-r-0", isDark ? "border-white/10" : "border-slate-200")}>
-              <p className={cn("text-sm", subduedClass)}>{label}</p>
-              <p className={cn("mt-2 text-3xl font-semibold", isDark ? "text-white" : "text-slate-950")}>{value}</p>
-              <p className={cn("mt-2 text-sm", subduedClass)}>{note}</p>
-            </div>
-          ))}
+        <div className={cn("grid overflow-hidden border-t sm:grid-cols-3", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70")}>
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+
+            return (
+              <div
+                key={stat.label}
+                className={cn(
+                  "group relative min-h-[10rem] overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6",
+                  isDark ? "border-white/10" : "border-slate-200"
+                )}
+              >
+                <div className={cn("absolute inset-x-0 top-0 h-1", stat.fillClass)} aria-hidden="true" />
+                <div className={cn("absolute -right-10 -top-10 h-28 w-28 rounded-full blur-3xl transition-opacity duration-300 group-hover:opacity-100", stat.orbClass, isDark ? "opacity-50" : "opacity-70")} aria-hidden="true" />
+                <div className="relative flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className={cn("text-sm font-medium", subduedClass)}>{stat.label}</p>
+                      <p className={cn("mt-2 text-3xl font-semibold tracking-tight sm:text-4xl", isDark ? "text-white" : "text-slate-950")}>{stat.value}</p>
+                    </div>
+                    <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] transition-transform duration-300 group-hover:scale-110", isDark ? "bg-slate-950/80 text-white" : "bg-white text-slate-950 shadow-sm")}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className={cn("rounded-full px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em]", stat.chipClass)}>
+                      {stat.chip}
+                    </span>
+                  </div>
+
+                  <div className={cn("mt-4 h-2 overflow-hidden rounded-full", stat.trackClass)}>
+                    <div className={cn("h-full rounded-full transition-all duration-700 group-hover:w-full", stat.fillClass)} style={{ width: stat.fillWidth }} aria-hidden="true" />
+                  </div>
+
+                  <p className={cn("mt-4 text-sm leading-6", subduedClass)}>{stat.note}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-7xl">
-        <section id="gain" className="py-10">
+        <section
+          id="gain"
+          className={cn(
+            "scroll-mt-28 rounded-[2rem] border px-5 py-10 shadow-[0_24px_80px_rgba(15,23,42,0.06)] sm:scroll-mt-32 sm:px-6 lg:scroll-mt-36 lg:px-8",
+            isDark
+              ? "border-white/10 bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.96)_0%,rgba(10,14,28,0.98)_45%,rgba(4,6,16,1)_100%)] shadow-[0_30px_90px_rgba(0,0,0,0.28)]"
+              : "border-slate-200 bg-gradient-to-b from-white/85 to-white/45"
+          )}
+        >
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase text-primary">{text.gainEyebrow}</p>
-            <h2 className={cn("mt-2 text-3xl font-semibold leading-tight sm:text-4xl", mutedHeadingClass)}>{text.gainTitle}</h2>
+            <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "bg-white/10 text-emerald-100" : "bg-emerald-50 text-emerald-700")}>
+              <Sparkles className="h-3.5 w-3.5" />
+              {text.gainEyebrow}
+            </div>
+            <h2 className={cn("mt-4 text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl", mutedHeadingClass)}>{text.gainTitle}</h2>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {text.gains.map((item, index) => {
               const Icon = gainIcons[index];
+              const accent = [
+                "from-emerald-500/15 via-emerald-500/5 to-transparent",
+                "from-sky-500/15 via-sky-500/5 to-transparent",
+                "from-amber-500/15 via-amber-500/5 to-transparent"
+              ][index];
+              const badge = ["01", "02", "03"][index];
 
               return (
-                <article key={item.title} className={sectionCardClass}>
-                  <div className={cn("mb-5 flex h-11 w-11 items-center justify-center rounded-[1.1rem]", isDark ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "bg-slate-950 text-white")}>
-                    <Icon className="h-5 w-5" />
+                <article
+                  key={item.title}
+                  className={cn(
+                    "group relative overflow-hidden rounded-[1.8rem] border bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl",
+                    isDark ? "border-white/10 bg-white/[0.04] hover:border-white/20" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/10"
+                  )}
+                >
+                  <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300 group-hover:opacity-100", accent)} aria-hidden="true" />
+                  <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-current opacity-[0.04] blur-3xl transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
+                  <div className="relative flex h-full flex-col">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className={cn("flex h-11 w-11 items-center justify-center rounded-[1.1rem]", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className={cn("rounded-full px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.2em]", isDark ? "bg-white/10 text-white/70" : "bg-slate-100 text-slate-500")}>
+                        {badge}
+                      </span>
+                    </div>
+                    <h3 className={cn("mt-4 text-xl font-semibold leading-tight sm:text-2xl", mutedHeadingClass)}>{item.title}</h3>
+                    <p className={cn("mt-2.5 text-sm leading-6 sm:text-base", mutedClass)}>{item.text}</p>
+                    <div className={cn("mt-auto pt-4 text-xs font-semibold uppercase tracking-[0.2em]", isDark ? "text-white/45" : "text-slate-400")}>
+                      {gainFooters[index]}
+                    </div>
                   </div>
-                  <h3 className={cn("text-xl font-semibold", mutedHeadingClass)}>{item.title}</h3>
-                  <p className={cn("mt-3 text-sm leading-7", mutedClass)}>{item.text}</p>
                 </article>
               );
             })}
           </div>
         </section>
 
-        <section id="why" className="grid gap-6 border-t border-slate-200 py-10 dark:border-slate-700 lg:grid-cols-[0.8fr_1fr]">
-          <div>
-            <p className="text-sm font-semibold uppercase text-primary">{text.whyEyebrow}</p>
-            <h2 className={cn("mt-2 text-3xl font-semibold leading-tight sm:text-4xl", mutedHeadingClass)}>{text.whyTitle}</h2>
+        <section id="why" className="scroll-mt-28 grid gap-6 rounded-[2rem] border border-slate-200 bg-white/55 px-5 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-950/20 sm:scroll-mt-32 sm:px-6 lg:scroll-mt-36 lg:grid-cols-[0.86fr_1fr] lg:px-8">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "bg-white/10 text-emerald-100" : "bg-emerald-50 text-emerald-700")}>
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {text.whyEyebrow}
+            </div>
+            <h2 className={cn("mt-3 text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl", mutedHeadingClass)}>{text.whyTitle}</h2>
+            <p className={cn("mt-3 max-w-xl text-sm leading-7 sm:text-base", mutedClass)}>
+              PocketSense helps you make sense of that mess before it turns into stress.
+            </p>
           </div>
 
           <div className="grid gap-3">
             {text.reasons.map((reason, index) => (
-                <div key={reason} className="flex gap-3 rounded-[1.5rem] border bg-card p-4 shadow-sm">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.95rem] bg-primary text-sm font-semibold text-primary-foreground">
-                  {index + 1}
+              <div
+                key={reason}
+                className={cn(
+                  "group relative overflow-hidden rounded-[1.5rem] border p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-5",
+                  isDark ? "border-white/10 bg-white/[0.04] hover:border-white/20" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-slate-900/10"
+                )}
+              >
+                <div className={cn("absolute inset-y-0 left-0 w-1", ["bg-emerald-400", "bg-sky-400", "bg-amber-400"][index])} aria-hidden="true" />
+                <div className="relative flex gap-4">
+                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] text-sm font-semibold", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
+                    {index + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={cn("text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "text-white/55" : "text-slate-500")}>
+                      {reasonLabels[index]}
+                    </p>
+                    <p className={cn("mt-1.5 text-sm leading-6 sm:text-base", mutedClass)}>{reason}</p>
+                  </div>
                 </div>
-                <p className={cn("text-sm leading-7", mutedClass)}>{reason}</p>
               </div>
             ))}
           </div>
@@ -377,16 +500,38 @@ export function LandingDashboard() {
             <h2 className={cn("mt-2 text-3xl font-semibold leading-tight sm:text-4xl", mutedHeadingClass)}>{text.insideTitle}</h2>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid items-start gap-3 sm:grid-cols-2">
             {text.features.map((feature, index) => {
               const Icon = featureIcons[index];
+              const detail = text.featureDetails[index];
 
               return (
-                <div key={feature} className="flex items-center gap-3 rounded-[1.5rem] border bg-card p-4 shadow-sm">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-secondary text-secondary-foreground">
-                    <Icon className="h-4 w-4" />
+                <div
+                  key={feature}
+                  className={cn(
+                    "group relative self-start overflow-hidden rounded-[1.5rem] border bg-card p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus-within:-translate-y-1 focus-within:shadow-xl sm:min-h-[4.5rem] sm:p-4",
+                    isDark ? "border-white/10 hover:border-white/20" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/10"
+                  )}
+                  tabIndex={0}
+                >
+                  <div className="relative flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] bg-secondary text-secondary-foreground transition-transform duration-300 group-hover:scale-105 group-focus-within:scale-105">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className={cn("block text-sm font-semibold leading-snug transition-colors duration-300 sm:text-base", mutedHeadingClass)}>
+                        {feature}
+                      </span>
+                      <p
+                        className={cn(
+                          "mt-1 max-h-0 overflow-hidden text-sm leading-6 opacity-0 transition-all duration-300 group-hover:max-h-24 group-hover:opacity-100 group-hover:pt-1 group-focus-within:max-h-24 group-focus-within:opacity-100 group-focus-within:pt-1",
+                          mutedClass
+                        )}
+                      >
+                        {detail}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold">{feature}</span>
                 </div>
               );
             })}
