@@ -303,3 +303,40 @@
 .heatmap-4 {
   background: #1d4ed8;
 }
+
+.landing-showcase-slide {
+  animation: landing-showcase 13.3s ease-in-out infinite;
+  opacity: 0;
+  transform: translateY(18px) scale(0.96);
+}
+
+@keyframes landing-showcase {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+
+  8%,
+  24% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  32%,
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-showcase-slide {
+    animation: none;
+    opacity: 0;
+    transform: none;
+  }
+
+  .landing-showcase-slide:first-child {
+    opacity: 1;
+  }
+}

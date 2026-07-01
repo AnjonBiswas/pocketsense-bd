@@ -59,6 +59,22 @@ export async function registerServiceWorker() {
     return null;
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+    await Promise.all(registrations.map((registration) => registration.unregister().catch(() => false)));
+
+    if ("caches" in window) {
+      const cacheKeys = await window.caches.keys().catch(() => []);
+      await Promise.all(
+        cacheKeys
+          .filter((key) => key.startsWith("pocketsense-"))
+          .map((key) => window.caches.delete(key).catch(() => false))
+      );
+    }
+
+    return null;
+  }
+
   const registration = await navigator.serviceWorker.register("/sw.js");
   return registration;
 }

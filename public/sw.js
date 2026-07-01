@@ -1,6 +1,6 @@
-const STATIC_CACHE = "pocketsense-static-v1";
-const API_CACHE = "pocketsense-api-v1";
-const DASHBOARD_CACHE = "pocketsense-dashboard-v1";
+const STATIC_CACHE = "pocketsense-static-v2";
+const API_CACHE = "pocketsense-api-v2";
+const DASHBOARD_CACHE = "pocketsense-dashboard-v2";
 const OFFLINE_URL = "/offline.html";
 
 const STATIC_ASSETS = ["/", "/manifest.json", "/offline.html", "/apple-touch-icon.png"];
@@ -70,6 +70,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   if (request.method !== "GET") {
+    return;
+  }
+
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(fetch(request));
     return;
   }
 

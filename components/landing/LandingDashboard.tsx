@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect } from "react";
 import {
   ArrowRight,
@@ -16,8 +17,7 @@ import {
   Sun,
   TrendingDown,
   Users,
-  WalletCards,
-  Zap
+  WalletCards
 } from "lucide-react";
 import { PocketSenseLogo } from "@/components/brand/PocketSenseLogo";
 import { Button } from "@/components/ui/button";
@@ -158,7 +158,12 @@ const copy = {
 
 const gainIcons = [WalletCards, TrendingDown, ShieldCheck] as const;
 const featureIcons = [ReceiptText, BellRing, Users, BarChart3] as const;
-const rowTone = ["bg-emerald-400", "bg-sky-400", "bg-amber-300"] as const;
+const showcaseImages = [
+  { src: "/img1.svg", alt: "PocketSense dashboard overview" },
+  { src: "/img2.svg", alt: "PocketSense budget planning screen" },
+  { src: "/img3.svg", alt: "PocketSense spending insight screen" },
+  { src: "/img4.svg", alt: "PocketSense student finance report screen" }
+] as const;
 
 export function LandingDashboard() {
   const { language, setLanguage } = useLanguage();
@@ -171,19 +176,8 @@ export function LandingDashboard() {
   const navShellClass = isDark
     ? "border border-white/15 bg-slate-950/[0.94] text-white shadow-[0_24px_80px_rgba(2,6,23,0.35)] dark:border-white/10 dark:bg-slate-950/[0.9]"
     : "border border-slate-200 bg-white/88 text-slate-950 shadow-[0_24px_80px_rgba(15,23,42,0.12)]";
-  const heroCardClass = isDark
-    ? "relative rounded-[1.75rem] border border-white/12 bg-black/48 p-3 shadow-2xl backdrop-blur"
-    : "relative rounded-[1.75rem] border border-slate-200 bg-white/88 p-3 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl";
-  const heroInnerClass = isDark
-    ? "rounded-[1.5rem] border border-white/10 bg-slate-950 p-4"
-    : "rounded-[1.5rem] border border-slate-200 bg-white p-4";
   const mutedClass = isDark ? "text-white/68" : "text-slate-700";
   const subduedClass = isDark ? "text-white/55" : "text-slate-500";
-  const statCardClass = isDark ? "rounded-[1.25rem] bg-white/10 p-3" : "rounded-[1.25rem] bg-slate-50 p-3";
-  const helperCardClass = isDark
-    ? "mt-5 rounded-[1.25rem] border border-amber-300/20 bg-amber-300/10 p-4"
-    : "mt-5 rounded-[1.25rem] border border-amber-200 bg-amber-50 p-4";
-  const helperTextClass = isDark ? "text-sm leading-6 text-amber-50" : "text-sm leading-6 text-amber-950";
   const mutedHeadingClass = isDark ? "text-white" : "text-slate-950";
   const sectionCardClass = isDark
     ? "group rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
@@ -302,52 +296,24 @@ export function LandingDashboard() {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-x-6 top-4 h-14 rounded-t-xl bg-white/15 blur-xl" aria-hidden="true" />
-            <div className={heroCardClass}>
-              <div className={heroInnerClass}>
-                <div className={cn("flex items-center justify-between gap-3 border-b pb-4", isDark ? "border-white/10" : "border-slate-200")}>
-                  <div>
-                    <p className={cn("text-sm", subduedClass)}>{text.previewLabel}</p>
-                    <h2 className={cn("mt-1 text-2xl font-semibold", isDark ? "text-white" : "text-slate-950")}>{text.previewTitle}</h2>
-                  </div>
-                  <div className={cn("rounded-[1.1rem] p-3", isDark ? "bg-emerald-400/20 text-emerald-200" : "bg-emerald-50 text-emerald-700")}>
-                    <Zap className="h-5 w-5" />
-                  </div>
+          <div className="relative min-h-[22rem] self-center sm:min-h-[26rem] lg:min-h-[31rem]">
+            <div className="relative mx-auto aspect-square w-full max-w-[34rem] overflow-visible">
+              {showcaseImages.map((image, index) => (
+                <div
+                  key={image.src}
+                  className="landing-showcase-slide absolute inset-0 flex items-center justify-center"
+                  style={{ animationDelay: `${index * 3.325}s` }}
+                >
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    width={1500}
+                    height={1500}
+                    priority={index === 0}
+                    className="h-full w-full object-contain drop-shadow-[0_28px_44px_rgba(15,23,42,0.14)]"
+                  />
                 </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {text.snapshot.map(([label, value]) => (
-                    <div key={label} className={statCardClass}>
-                      <p className={isDark ? "truncate text-xs text-white/55" : "truncate text-xs text-slate-500"}>{label}</p>
-                      <p className={cn("mt-2 text-base font-semibold sm:text-lg", isDark ? "text-white" : "text-slate-950")}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  {text.rows.map(([label, spent, limit, width], index) => (
-                    <div key={label}>
-                      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                        <span className="font-medium">{label}</span>
-                        <span className={subduedClass}>
-                          {spent} / {limit}
-                        </span>
-                      </div>
-                      <div className={cn("h-2.5 overflow-hidden rounded-full", isDark ? "bg-white/10" : "bg-slate-100")}>
-                        <div className={cn("h-full rounded-full", rowTone[index])} style={{ width }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={helperCardClass}>
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className={cn("mt-0.5 h-4 w-4 shrink-0", isDark ? "text-amber-200" : "text-amber-600")} />
-                    <p className={helperTextClass}>{text.previewHint}</p>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
