@@ -354,7 +354,7 @@ export function LandingDashboard() {
           </div>
         </div>
 
-        <div className={cn("grid overflow-hidden border-t sm:grid-cols-3", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70")}>
+        <div className={cn("flex snap-x snap-mandatory gap-3 overflow-x-auto border-t px-5 pb-2 pt-0 sm:grid sm:overflow-hidden sm:px-0 sm:pb-0 sm:pt-0 sm:grid-cols-3 sm:gap-0", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200 bg-white/70")}>
           {statCards.map((stat) => {
             const Icon = stat.icon;
 
@@ -362,7 +362,7 @@ export function LandingDashboard() {
               <div
                 key={stat.label}
                 className={cn(
-                  "group relative min-h-[10rem] overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6",
+                  "group relative min-h-[8.5rem] w-[78vw] flex-none snap-start overflow-hidden p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[10rem] sm:w-auto sm:flex-1 sm:p-6",
                   isDark ? "border-white/10" : "border-slate-200"
                 )}
               >
@@ -372,24 +372,24 @@ export function LandingDashboard() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className={cn("text-sm font-medium", subduedClass)}>{stat.label}</p>
-                      <p className={cn("mt-2 text-3xl font-semibold tracking-tight sm:text-4xl", isDark ? "text-white" : "text-slate-950")}>{stat.value}</p>
+                      <p className={cn("mt-1.5 text-2xl font-semibold tracking-tight sm:mt-2 sm:text-4xl", isDark ? "text-white" : "text-slate-950")}>{stat.value}</p>
                     </div>
-                    <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] transition-transform duration-300 group-hover:scale-110", isDark ? "bg-slate-950/80 text-white" : "bg-white text-slate-950 shadow-sm")}>
-                      <Icon className="h-5 w-5" />
+                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[1.05rem] transition-transform duration-300 group-hover:scale-110 sm:h-11 sm:w-11 sm:rounded-[1.1rem]", isDark ? "bg-slate-950/80 text-white" : "bg-white text-slate-950 shadow-sm")}>
+                      <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className={cn("rounded-full px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em]", stat.chipClass)}>
+                  <div className="mt-3 flex items-center gap-2 sm:mt-4">
+                    <span className={cn("rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em] sm:px-2.5 sm:py-1 sm:text-[0.7rem]", stat.chipClass)}>
                       {stat.chip}
                     </span>
                   </div>
 
-                  <div className={cn("mt-4 h-2 overflow-hidden rounded-full", stat.trackClass)}>
+                  <div className={cn("mt-3 h-1.5 overflow-hidden rounded-full sm:mt-4 sm:h-2", stat.trackClass)}>
                     <div className={cn("h-full rounded-full transition-all duration-700 group-hover:w-full", stat.fillClass)} style={{ width: stat.fillWidth }} aria-hidden="true" />
                   </div>
 
-                  <p className={cn("mt-4 text-sm leading-6", subduedClass)}>{stat.note}</p>
+                  <p className={cn("mt-3 text-xs leading-5 sm:mt-4 sm:text-sm sm:leading-6", subduedClass)}>{stat.note}</p>
                 </div>
               </div>
             );
@@ -429,7 +429,7 @@ export function LandingDashboard() {
                 <article
                   key={item.title}
                   className={cn(
-                    "group relative overflow-hidden rounded-[1.8rem] border bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl",
+                    "group relative overflow-hidden rounded-[1.8rem] border bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-5",
                     isDark ? "border-white/10 bg-white/[0.04] hover:border-white/20" : "border-slate-200 hover:border-slate-300 hover:shadow-slate-900/10"
                   )}
                 >
@@ -437,16 +437,16 @@ export function LandingDashboard() {
                   <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-current opacity-[0.04] blur-3xl transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
                   <div className="relative flex h-full flex-col">
                     <div className="flex items-start justify-between gap-4">
-                      <div className={cn("flex h-11 w-11 items-center justify-center rounded-[1.1rem]", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-[1rem] sm:h-11 sm:w-11 sm:rounded-[1.1rem]", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className={cn("rounded-full px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.2em]", isDark ? "bg-white/10 text-white/70" : "bg-slate-100 text-slate-500")}>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em] sm:px-2.5 sm:py-1 sm:text-[0.7rem]", isDark ? "bg-white/10 text-white/70" : "bg-slate-100 text-slate-500")}>
                         {badge}
                       </span>
                     </div>
-                    <h3 className={cn("mt-4 text-xl font-semibold leading-tight sm:text-2xl", mutedHeadingClass)}>{item.title}</h3>
-                    <p className={cn("mt-2.5 text-sm leading-6 sm:text-base", mutedClass)}>{item.text}</p>
-                    <div className={cn("mt-auto pt-4 text-xs font-semibold uppercase tracking-[0.2em]", isDark ? "text-white/45" : "text-slate-400")}>
+                    <h3 className={cn("mt-3 text-lg font-semibold leading-tight sm:mt-4 sm:text-2xl", mutedHeadingClass)}>{item.title}</h3>
+                    <p className={cn("mt-2 text-sm leading-6 sm:mt-2.5 sm:text-base", mutedClass)}>{item.text}</p>
+                    <div className={cn("mt-auto pt-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] sm:pt-4 sm:text-xs sm:tracking-[0.2em]", isDark ? "text-white/45" : "text-slate-400")}>
                       {gainFooters[index]}
                     </div>
                   </div>
@@ -473,20 +473,20 @@ export function LandingDashboard() {
               <div
                 key={reason}
                 className={cn(
-                  "group relative overflow-hidden rounded-[1.5rem] border p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-5",
+                  "group relative overflow-hidden rounded-[1.5rem] border p-3.5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-5",
                   isDark ? "border-white/10 bg-white/[0.04] hover:border-white/20" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-slate-900/10"
                 )}
               >
                 <div className={cn("absolute inset-y-0 left-0 w-1", ["bg-emerald-400", "bg-sky-400", "bg-amber-400"][index])} aria-hidden="true" />
                 <div className="relative flex gap-4">
-                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] text-sm font-semibold", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] text-sm font-semibold sm:h-10 sm:w-10", isDark ? "bg-slate-950 text-white" : "bg-slate-950 text-white")}>
                     {index + 1}
                   </div>
                   <div className="min-w-0">
                     <p className={cn("text-xs font-semibold uppercase tracking-[0.18em]", isDark ? "text-white/55" : "text-slate-500")}>
                       {reasonLabels[index]}
                     </p>
-                    <p className={cn("mt-1.5 text-sm leading-6 sm:text-base", mutedClass)}>{reason}</p>
+                    <p className={cn("mt-1 text-sm leading-6 sm:text-base", mutedClass)}>{reason}</p>
                   </div>
                 </div>
               </div>
