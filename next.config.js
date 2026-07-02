@@ -18,8 +18,12 @@ function assertPublicEnv(name, value) {
   }
 }
 
+function isLintCommand() {
+  return process.argv.some((arg) => arg === "lint" || arg.endsWith("next-lint"));
+}
+
 module.exports = (phase) => {
-  if (phase === PHASE_PRODUCTION_BUILD) {
+  if (phase === PHASE_PRODUCTION_BUILD && !isLintCommand()) {
     assertPublicEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
     assertPublicEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   }
