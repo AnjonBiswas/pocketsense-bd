@@ -150,7 +150,7 @@ describe("/api/expenses route", () => {
     );
   });
 
-  it("returns paginated guest expenses when no user is present", async () => {
+  it("requires authentication to list expenses", async () => {
     (createRouteHandlerClient as jest.Mock).mockReturnValue(
       createSupabaseMock({
         user: null
@@ -161,14 +161,8 @@ describe("/api/expenses route", () => {
     const response = await GET(request);
     const payload = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(Array.isArray(payload.expenses)).toBe(true);
-    expect(payload.meta).toEqual(
-      expect.objectContaining({
-        page: 1,
-        limit: 5
-      })
-    );
+    expect(response.status).toBe(401);
+    expect(payload.error).toMatch(/Authentication required/i);
   });
 
   it("deletes expenses for an authenticated user", async () => {
@@ -198,7 +192,7 @@ describe("/api/expenses route", () => {
     expect(payload.deletedIds).toEqual(["expense-1"]);
   });
 
-  it("returns a server error when Supabase throws", async () => {
+  it("returns a safe server error when session verification fails", async () => {
     (createRouteHandlerClient as jest.Mock).mockImplementation(() => {
       throw new Error("Supabase unavailable");
     });
@@ -208,6 +202,6 @@ describe("/api/expenses route", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(500);
-    expect(payload.error).toMatch(/Supabase unavailable/i);
+    expect(payload.error).toMatch(/Unable to verify your session right now/i);
   });
 });
