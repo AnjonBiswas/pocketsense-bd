@@ -1,3 +1,5 @@
+const { PHASE_PRODUCTION_BUILD } = require("next/constants");
+
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true"
 });
@@ -16,20 +18,24 @@ function assertPublicEnv(name, value) {
   }
 }
 
-assertPublicEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
-assertPublicEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**.supabase.co"
-      }
-    ]
+module.exports = (phase) => {
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    assertPublicEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    assertPublicEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   }
-};
 
-module.exports = withBundleAnalyzer(nextConfig);
+  /** @type {import('next').NextConfig} */
+  const nextConfig = {
+    reactStrictMode: true,
+    images: {
+      remotePatterns: [
+        {
+          protocol: "https",
+          hostname: "**.supabase.co"
+        }
+      ]
+    }
+  };
+
+  return withBundleAnalyzer(nextConfig);
+};
